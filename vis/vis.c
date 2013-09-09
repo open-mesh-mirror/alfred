@@ -59,7 +59,8 @@ static char *read_file(char *fname)
 	}
 	fclose(fp);
 
-	buf[size] = 0;
+	if (buf)
+		buf[size] = 0;
 
 	return buf;
 }
