@@ -35,7 +35,7 @@
 #include "hash.h"
 #include "packet.h"
 
-int unix_sock_open_daemon(struct globals *globals, char *path)
+int unix_sock_open_daemon(struct globals *globals, const char *path)
 {
 	struct sockaddr_un addr;
 
@@ -68,7 +68,7 @@ int unix_sock_open_daemon(struct globals *globals, char *path)
 	return 0;
 }
 
-int unix_sock_open_client(struct globals *globals, char *path)
+int unix_sock_open_client(struct globals *globals, const char *path)
 {
 	struct sockaddr_un addr;
 

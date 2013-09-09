@@ -91,8 +91,8 @@ struct globals {
 	struct in6_addr address;
 	uint32_t scope_id;
 	struct server *best_server;	/* NULL if we are a server ourselves */
-	char *interface;
-	char *mesh_iface;
+	const char *interface;
+	const char *mesh_iface;
 	enum opmode opmode;
 	enum clientmode clientmode;
 	int clientmode_arg;
@@ -139,8 +139,8 @@ int send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 		       void *buf, int length);
 /* unix_sock.c */
 int unix_sock_read(struct globals *globals);
-int unix_sock_open_daemon(struct globals *globals, char *path);
-int unix_sock_open_client(struct globals *globals, char *path);
+int unix_sock_open_daemon(struct globals *globals, const char *path);
+int unix_sock_open_client(struct globals *globals, const char *path);
 int unix_sock_close(struct globals *globals);
 int unix_sock_req_data_finish(struct globals *globals,
 			      struct transaction_head *head);

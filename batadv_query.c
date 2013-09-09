@@ -88,7 +88,7 @@ int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
 	return 0;
 }
 
-int batadv_interface_check(char *mesh_iface)
+int batadv_interface_check(const char *mesh_iface)
 {
 	char *debugfs_mnt;
 	char full_path[MAX_PATH+1];
@@ -125,7 +125,7 @@ int batadv_interface_check(char *mesh_iface)
 	return 0;
 }
 
-struct ether_addr *translate_mac(char *mesh_iface, struct ether_addr *mac)
+struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 {
 	enum {
 		tg_start,
@@ -207,7 +207,7 @@ out:
 	return mac_result;
 }
 
-uint8_t get_tq(char *mesh_iface, struct ether_addr *mac)
+uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 {
 	enum {
 		orig_mac,

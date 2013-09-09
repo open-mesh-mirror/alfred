@@ -89,7 +89,7 @@ struct vis_list_entry {
 	 		   + (vis_data)->entries_n * sizeof(struct vis_entry))
 
 struct globals {
-	char *interface;
+	const char *interface;
 	enum opmode opmode;
 	enum vis_format vis_format;
 	uint8_t buf[65536];

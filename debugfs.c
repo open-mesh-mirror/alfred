@@ -43,7 +43,8 @@ static const char *debugfs_known_mountpoints[] = {
 };
 
 /* construct a full path to a debugfs element */
-int debugfs_make_path(const char *fmt, char *mesh_iface, char *buffer, int size)
+int debugfs_make_path(const char *fmt, const char *mesh_iface, char *buffer,
+		      int size)
 {
 	int len;
 
