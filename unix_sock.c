@@ -310,8 +310,6 @@ int unix_sock_read(struct globals *globals)
 	if (packet->version != ALFRED_VERSION)
 		goto err;
 
-	ret = 0;
-
 	switch (packet->type) {
 	case ALFRED_PUSH_DATA:
 		ret = unix_sock_add_data(globals,
