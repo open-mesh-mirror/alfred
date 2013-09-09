@@ -19,19 +19,14 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
 #include <netinet/in.h>
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <linux/if_packet.h>
-#include <linux/if_ether.h>
-#include <linux/filter.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/socket.h>
 #include "alfred.h"
+#include "hash.h"
+#include "packet.h"
 
 int announce_master(struct globals *globals)
 {

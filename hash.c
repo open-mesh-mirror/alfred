@@ -20,8 +20,9 @@
  */
 
 
-#include <stdio.h>	/* NULL */
-#include <stdlib.h>	/* free() */
+#include "hash.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include "alfred.h"
 
 /* clears the hash */

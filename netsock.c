@@ -19,17 +19,19 @@
  *
  */
 
+#include <sys/socket.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <netinet/in.h>
 #include <sys/ioctl.h>
-#include <linux/if.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #include "alfred.h"
 #include "batadv_query.h"
+#include "packet.h"
 
 const struct in6_addr in6addr_localmcast = {{{ 0xff, 0x02, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x00,

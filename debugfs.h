@@ -21,9 +21,6 @@
 #ifndef __DEBUGFS_H__
 #define __DEBUGFS_H__
 
-#include <sys/mount.h>
-#include <string.h>
-
 #ifndef MAX_PATH
 # define MAX_PATH 256
 #endif

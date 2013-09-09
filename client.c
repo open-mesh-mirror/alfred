@@ -19,17 +19,15 @@
  *
  */
 
+#include <ctype.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <ctype.h>
 #include "alfred.h"
+#include "packet.h"
 
 int alfred_client_request_data(struct globals *globals)
 {

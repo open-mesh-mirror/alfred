@@ -19,17 +19,21 @@
  *
  */
 
+#include <errno.h>
+#include <net/ethernet.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
+#include <time.h>
+#include <unistd.h>
 #include "alfred.h"
+#include "hash.h"
+#include "packet.h"
 
 int unix_sock_open_daemon(struct globals *globals, char *path)
 {

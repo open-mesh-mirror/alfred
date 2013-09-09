@@ -19,14 +19,12 @@
  */
 
 #include "debugfs.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <sys/vfs.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <sys/statfs.h>
 
 #ifndef DEBUGFS_MAGIC
 #define DEBUGFS_MAGIC          0x64626720

@@ -19,19 +19,22 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
-#include <sys/ioctl.h>
-#include <linux/if.h>
-#include <linux/if_packet.h>
-#include <arpa/inet.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 #include "alfred.h"
 #include "batadv_query.h"
+#include "hash.h"
+#include "list.h"
+#include "packet.h"
 
 static int finish_alfred_push_data(struct globals *globals,
 				   struct ether_addr mac,

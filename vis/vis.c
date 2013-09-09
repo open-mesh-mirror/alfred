@@ -20,6 +20,21 @@
  */
 
 #include "vis.h"
+#include <dirent.h>
+#include <errno.h>
+#include <getopt.h>
+#include <linux/if.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include "debugfs.h"
 
 char *read_file(char *fname)
 {

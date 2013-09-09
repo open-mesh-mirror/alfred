@@ -19,10 +19,12 @@
  *
  */
 
-#include <sys/time.h>
-#include <time.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
+#include "alfred.h"
 
 int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff) {

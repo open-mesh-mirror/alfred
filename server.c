@@ -19,17 +19,19 @@
  *
  */
 
+#include <errno.h>
+#include <net/ethernet.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
 #include "alfred.h"
 #include "batadv_query.h"
+#include "hash.h"
 
 static int server_compare(void *d1, void *d2)
 {

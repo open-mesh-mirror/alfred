@@ -19,25 +19,11 @@
  *
  */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <getopt.h>
-#include <signal.h>
-#include <dirent.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/un.h>
-#include <linux/if.h>
-#include <netinet/ether.h>
-#include <netinet/in.h>
-#include "../packet.h"
+#include <linux/if_ether.h>
+#include <stdint.h>
 #include "../list.h"
-#include "debugfs.h"
+#include "../packet.h"
 
 
 #ifndef SOURCE_VERSION

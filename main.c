@@ -19,17 +19,14 @@
  *
  */
 
+#include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <signal.h>
 #include "alfred.h"
+#include "packet.h"
+
 
 static void alfred_usage(void)
 {

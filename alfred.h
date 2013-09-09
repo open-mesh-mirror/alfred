@@ -23,12 +23,10 @@
 #define SOURCE_VERSION			"2013.4.0"
 #endif
 
-#include <stdint.h>
-#include <linux/if_ether.h>
-#include <netinet/ether.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
+#include <stdint.h>
 #include <time.h>
-#include "hash.h"
 #include "list.h"
 #include "packet.h"
 
