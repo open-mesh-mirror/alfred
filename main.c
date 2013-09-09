@@ -37,6 +37,8 @@ static void alfred_usage(void)
 	printf("  -r, --request [data type]   collect data from the network and prints\n");
 	printf("                              it on the network\n");
 	printf("  -V, --req-version           specify the data version set for -s\n");
+	printf("  -M, --modeswitch master     switch daemon to mode master\n");
+	printf("                   slave      switch daemon to mode slave\n");
 	printf("\n");
 	printf("server mode options:\n");
 	printf("  -i, --interface             specify the interface to listen on\n");
@@ -62,6 +64,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"master",	no_argument,		NULL,	'm'},
 		{"help",	no_argument,		NULL,	'h'},
 		{"req-version", required_argument,	NULL,	'V'},
+		{"modeswitch",  required_argument,	NULL,	'M'},
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
 	};
@@ -81,7 +84,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -120,6 +123,17 @@ static struct globals *alfred_init(int argc, char *argv[])
 			}
 			globals->clientmode_version = atoi(optarg);
 			break;
+		case 'M':
+			if (strcmp(optarg, "master") == 0) {
+				globals->opmode = OPMODE_MASTER;
+			} else if (strcmp(optarg, "slave") == 0) {
+				globals->opmode = OPMODE_SLAVE;
+			} else {
+				fprintf(stderr, "bad modeswitch argument\n");
+				return NULL;
+			}
+			globals->clientmode = CLIENT_MODESWITCH;
+			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);
 			printf("A.L.F.R.E.D. - Almighty Lightweight Remote Fact Exchange Daemon\n");
@@ -154,6 +168,9 @@ int main(int argc, char *argv[])
 		break;
 	case CLIENT_SET_DATA:
 		return alfred_client_set_data(globals);
+		break;
+	case CLIENT_MODESWITCH:
+		return alfred_client_modeswitch(globals);
 		break;
 	}
 

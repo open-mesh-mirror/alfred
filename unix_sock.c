@@ -272,6 +272,34 @@ int unix_sock_req_data_finish(struct globals *globals,
 	return ret;
 }
 
+static int unix_sock_modesw(struct globals *globals,
+			    struct alfred_modeswitch_v0 *modeswitch,
+			    int client_sock)
+{
+	int len, ret = -1;
+
+	len = ntohs(modeswitch->header.length);
+
+	if (len < (int)(sizeof(*modeswitch) - sizeof(modeswitch->header)))
+		goto err;
+
+	switch (modeswitch->mode) {
+	case ALFRED_MODESWITCH_SLAVE:
+		globals->opmode = OPMODE_SLAVE;
+		break;
+	case ALFRED_MODESWITCH_MASTER:
+		globals->opmode = OPMODE_MASTER;
+		break;
+	default:
+		goto err;
+	}
+
+	ret = 0;
+err:
+	close(client_sock);
+	return ret;
+}
+
 int unix_sock_read(struct globals *globals)
 {
 	int client_sock;
@@ -320,6 +348,11 @@ int unix_sock_read(struct globals *globals)
 		ret = unix_sock_req_data(globals,
 					 (struct alfred_request_v0 *)packet,
 					 client_sock);
+		break;
+	case ALFRED_MODESWITCH:
+		ret = unix_sock_modesw(globals,
+				       (struct alfred_modeswitch_v0 *)packet,
+					client_sock);
 		break;
 	default:
 		/* unknown packet type */

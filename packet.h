@@ -66,6 +66,7 @@ struct alfred_transaction_mgmt {
  * @ALFRED_REQUEST: Packet is an alfred_request_v*
  * @ALFRED_STATUS_TXEND: Transaction was finished by sender
  * @ALFRED_STATUS_ERROR: Error was detected during the transaction
+ * @ALFRED_MODESWITCH: Switch between different operation modes
  */
 enum alfred_packet_type {
 	ALFRED_PUSH_DATA = 0,
@@ -73,6 +74,7 @@ enum alfred_packet_type {
 	ALFRED_REQUEST = 2,
 	ALFRED_STATUS_TXEND = 3,
 	ALFRED_STATUS_ERROR = 4,
+	ALFRED_MODESWITCH = 5,
 };
 
 /* packets */
@@ -116,6 +118,28 @@ struct alfred_request_v0 {
 	struct alfred_tlv header;
 	uint8_t requested_type;
 	uint16_t tx_id;
+} __packed;
+
+/**
+ * enum alfred_modeswitch_type - Mode of the daemon
+ * @ALFRED_MODESWITCH_SLAVE: see OPMODE_SLAVE
+ * @ALFRED_MODESWITCH_MASTER: see OPMODE_MASTER
+ */
+enum alfred_modeswitch_type {
+	ALFRED_MODESWITCH_SLAVE = 0,
+	ALFRED_MODESWITCH_MASTER = 1,
+};
+
+/**
+ * struct alfred_modeswitch_v0 - Request for a specific type
+ * @header: TLV header describing the complete packet
+ * @mode: data type which is requested
+ *
+ * Sent to the daemon by client
+ */
+struct alfred_modeswitch_v0 {
+	struct alfred_tlv header;
+	uint8_t mode;
 } __packed;
 
 /**

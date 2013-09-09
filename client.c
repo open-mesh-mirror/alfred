@@ -179,3 +179,41 @@ int alfred_client_set_data(struct globals *globals)
 	unix_sock_close(globals);
 	return 0;
 }
+
+int alfred_client_modeswitch(struct globals *globals)
+{
+	unsigned char buf[MAX_PAYLOAD];
+	struct alfred_modeswitch_v0 *modeswitch;
+	int ret, len;
+
+	if (unix_sock_open_client(globals, ALFRED_SOCK_PATH))
+		return -1;
+
+	modeswitch = (struct alfred_modeswitch_v0 *)buf;
+	len = sizeof(*modeswitch);
+
+	modeswitch->header.type = ALFRED_MODESWITCH;
+	modeswitch->header.version = ALFRED_VERSION;
+	modeswitch->header.length = htons(len - sizeof(modeswitch->header));
+
+	switch (globals->opmode) {
+	case OPMODE_SLAVE:
+		modeswitch->mode = ALFRED_MODESWITCH_SLAVE;
+		break;
+	case OPMODE_MASTER:
+		modeswitch->mode = ALFRED_MODESWITCH_MASTER;
+		break;
+	default:
+		fprintf(stderr, "%s: unknown opmode %u in modeswitch\n",
+			__func__, globals->opmode);
+		return -1;
+	}
+
+	ret = write(globals->unix_sock, buf, len);
+	if (ret != len)
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+
+	unix_sock_close(globals);
+	return 0;
+}
