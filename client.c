@@ -81,6 +81,9 @@ int alfred_client_request_data(struct globals *globals)
 		ret = read(globals->unix_sock, buf + sizeof(*push),
 			   sizeof(*data));
 
+		if (ret < (ssize_t)sizeof(*data))
+			break;
+
 		data = push->data;
 		data_len = ntohs(data->header.length);
 
