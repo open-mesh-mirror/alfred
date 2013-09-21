@@ -608,7 +608,7 @@ static int vis_get_data(struct globals *globals)
 
 static void vis_usage(void)
 {
-	printf("Usage: vis [options]\n");
+	printf("Usage: batadv-vis [options]\n");
 	printf("  -i, --interface             specify the batman-adv interface configured on the system (default: bat0)\n");
 	printf("  -s, --server                start up in server mode, which regularly updates vis data from batman-adv\n");
 	printf("  -f, --format <format>       specify the output format for client mode (either \"json\" or \"dot\")\n");

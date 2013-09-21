@@ -33,13 +33,13 @@ To compile alfred, simply type:
 
  $ make
 
-This will compile both alfred and vis. To install, use
+This will compile both alfred and batadv-vis. To install, use
 
  $ make install
 
 (with the right privileges).
 
-If you don't want to compile vis, add the directive CONFIG_ALFRED_VIS=n:
+If you don't want to compile batadv-vis, add the directive CONFIG_ALFRED_VIS=n:
 
  $ make CONFIG_ALFRED_VIS=n 
  $ make CONFIG_ALFRED_VIS=n install
@@ -113,22 +113,23 @@ machines (slaves send information to masters).
 Vis
 ---
 
-Vis can be used to visualize your batman-adv mesh network. It read the neighbor
-information and local client table and distributes this information via alfred
-in the network. By gathering this local information, any vis node can get the
-whole picture of the network.
+batadv-vis can be used to visualize your batman-adv mesh network. It read the
+neighbor information and local client table and distributes this information via
+alfred in the network. By gathering this local information, any vis node can get
+the whole picture of the network.
 
-Vis, similar to to alfred, combines server (daemon) and client functionality in
-the 'vis' binary. The vis server must be started to let vis work:
+batadv-vis, similar to to alfred, combines server (daemon) and client
+functionality in the 'batadv-vis' binary. The batadv-vis server must be started
+to let batadv-vis work:
 
- $ vis -i bat0 -s
+ $ batadv-vis -i bat0 -s
 
 This server will read the neighbor and client information from batman-adv every
 10 seconds and set it in alfred via unix socket. Obviously, the alfred server
 must run too to get this information set.
 
 To get a graphviz-compatible vis output, simply type:
- $ vis
+ $ batadv-vis
 digraph {
         subgraph "cluster_fe:f0:00:00:04:01" {
                 "fe:f0:00:00:04:01"
@@ -153,7 +154,7 @@ digraph {
 
 For a json formatted output, use:
 
- $ vis -f json
+ $ batadv-vis -f json
 { "primary" : "fe:f0:00:00:04:01" }
 { "router" : "fe:f0:00:00:04:01", "neighbor" : "fe:f0:00:00:05:01", "label" : "1.000" }
 { "router" : "fe:f0:00:00:04:01", "neighbor" : "fe:f0:00:00:03:01", "label" : "1.008" }
@@ -171,8 +172,8 @@ For a json formatted output, use:
 License
 -------
 
-alfred and vis are licensed under the terms of version 2 of the GNU General
-Public License (GPL). Please see the LICENSE file.
+alfred and batadv-vis are licensed under the terms of version 2 of the GNU
+General Public License (GPL). Please see the LICENSE file.
 
 The file "packet.h" is an exception and not licensed with the GPL. Instead,
 it is licensed using ISC license (see the head of this file). This allows
