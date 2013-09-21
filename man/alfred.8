@@ -1,0 +1,136 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "ALFRED" "8" "Sep 21, 2013" "Linux" "Almighty Lightweight Fact Remote Exchange Daemon"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.\" --------------------------------------------------------------------------
+.\" Process this file with
+.\" groff -man alfred.8 -Tutf8
+.\" Retrieve format warnings with
+.\" man --warnings alfred.8 > /dev/null
+.\" --------------------------------------------------------------------------
+.ad l
+.SH NAME
+alfred \- Almighty Lightweight Fact Remote Exchange Daemon
+.SH SYNOPSIS
+.B alfred [\fIoptions\fP]
+.br
+.SH DESCRIPTION
+alfred is a user space daemon for distributing arbitrary local information over
+the mesh/network in a decentralized fashion. This data can be anything which
+appears to be useful - originally designed to replace the batman-adv
+visualization (vis), you may distribute hostnames, phone books, administration
+information, DNS information, the local weather forecast ...
+.PP
+alfred runs as daemon in the background of the system. A user may insert
+information by using the alfred binary on the command line, or use special
+programs to communicate with alfred (done via unix sockets). alfred then takes
+care of distributing the local information to other alfred servers on other
+nodes. This is done via IPv6 link-local multicast, and does not require any
+configuration. A user can request data from alfred, and will receive the
+information available from all alfred servers in the network.
+.PP
+.PP
+.SH OPTIONS
+.TP
+\fB\-v\fP, \fB\-\-version\fP
+Print the version
+.TP
+\fB\-h\fP, \fB\-\-help\fP
+Display a brief help message.
+.
+.SH CLIENT OPTIONS
+.TP
+\fB\-s\fP, \fB\-\-set\-data\fP \fIdata\-type\fP
+Sets new data to distribute from stdin for the supplied data type (0\-255).
+
+Note that 0 - 63 are reserved (please send an e-mail to the authors if you want
+to register a datatype), and can not be used on the commandline. Information
+must be periodically written again to alfred, otherwise it will timeout and
+alfred will forget about it (after 10 minutes).
+.TP
+\fB\-r\fP, \fB\-\-request\fP \fIdata\-type\fP
+Collect data from the network and prints it on the network
+.TP
+\fB\-V\fP, \fB\-\-req\-version\fP \fIversion\fP
+Specify the data version set for \fB\-s\fP
+
+Skipping the parameter entirely has the same effect as setting the parameter
+to 0 ('\fB\-V\fP 0').
+.TP
+\fB\-M\fP, \fB\-\-modeswitch\fP \fImode\fP
+.nf
+\fBmaster\fP
+    Switch daemon to mode master
+\fBslave\fP
+    Switch daemon to mode slave
+.fi
+.
+.SH SERVER OPTIONS
+.TP
+\fB\-i\fP, \fB\-\-interface\fP \fiface\fP
+Specify the interface to listen on
+.TP
+\fB\-b\fP \fIbatmanif\fP
+Specify the batman-adv interface configured on the system (default: bat0).
+Use 'none' to disable the batman-adv based best server selection.
+
+The \fB\-b\fP option is optional, and only needed if you run alfred on a
+batman-adv interface not called bat0, or if you don't use batman-adv at all
+(use '\fB\-b\fP none'). In this case, alfred will still work but will not be
+able to find the best next master server based on metrics.
+.TP
+\fB\-m\fP, \fB\-\-master\fP
+Start up the daemon in master mode, which accepts data from slaves and synces
+it with other masters.
+
+alfred servers may either run as master or slave in the network. Masters will
+announce their status via broadcast, so that slaves can find them. Slaves will
+then send their data to their nearest master (based on TQ). Masters will
+exchange their data (which they have received from slaves or got on their own)
+with other masters. By using masters and slaves, overhead can be reduced while
+still keeping redundancy (by having multiple masters). Obviously, at least one
+master must be present in the network to let any data exchange happen. Also
+having all nodes in master mode is possible (for maximum decentrality and
+overhead).
+.
+.SH EXAMPLES
+Start an alfred server listening on bridge br0 (assuming that this bridge
+includes the batman interface bat0):
+.br
+\fB     alfred \-i br0 \-m\fP
+.br
+
+Send data to the alfred server and store it under id 65:
+.br
+\fB     cat /etc/hostname | alfred -s 65\fP
+
+Retreive all data stored as id 65 from all connected alfred servers:
+.br
+\fB     alfred -r 65\fP
+.nf
+     { "fe:f1:00:00:01:01", "OpenWRT\-node\-1\\x0a" },
+     { "fe:f1:00:00:02:01", "OpenWRT\-node\-2\\x0a" },
+     { "fe:f1:00:00:03:01", "OpenWRT\-node\-3\\x0a" },
+.fi
+.br
+.
+.SH SEE ALSO
+.BR batadv-vis (8),
+.BR batctl (8)
+.SH AUTHOR
+alfred was written by Simon Wunderlich <siwu@hrz.tu-chemnitz.de> and Sven Eckelmann <sven@open-mesh.com>.
+.PP
+This manual page was written by Simon Wunderlich <siwu@hrz.tu-chemnitz.de> and Sven Eckelmann <sven@open-mesh.com>.

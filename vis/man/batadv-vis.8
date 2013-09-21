@@ -1,0 +1,116 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "BATADV-VIS" "8" "Sep 21, 2013" "Linux" "batman-adv visualization server"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.\" --------------------------------------------------------------------------
+.\" Process this file with
+.\" groff -man batadv-vis.8 -Tutf8
+.\" Retrieve format warnings with
+.\" man --warnings batadv-vis.8 > /dev/null
+.\" --------------------------------------------------------------------------
+.ad l
+.SH NAME
+batadv\-vis \- batman-adv visualization server
+.SH SYNOPSIS
+.B batadv\-vis [\fIoptions\fP]
+.br
+.SH DESCRIPTION
+batadv\-vis can be used to visualize your batman-adv mesh network. It read the
+neighbor information and local client table and distributes this information via
+alfred in the network. By gathering this local information, any vis node can get
+the whole picture of the network.
+.PP
+.PP
+.SH OPTIONS
+.TP
+\fB\-v\fP, \fB\-\-version\fP
+Print the version
+.TP
+\fB\-h\fP, \fB\-\-help\fP
+Display a brief help message.
+.TP
+\fB\-i\fP, \fB\-\-interface\fP \fIiface\fP
+Specify the batman-adv interface configured on the system (default: bat0)
+.TP
+\fB\-s\fP, \fB\-\-server\fP
+Start up in server mode. This server will read the neighbor and client
+information from batman-adv every 10 seconds and set it in alfred via unix
+socket. The alfred server must run too to get this information set.
+.TP
+\fB\-f\fP, \fB\-\-format\fP \fIformat\fP
+Specify the output format for client mode (either "json" or "dot")
+.
+.SH EXAMPLES
+Start an batadv\-vis server which is fetching the information for bat0:
+.br
+\fB     batadv\-vis \-i bat0 \-s\fP
+.br
+
+To get a graphviz-compatible vis output:
+.br
+\fB     batadv-vis\fP
+.nf
+     digraph {
+             subgraph "cluster_fe:f0:00:00:04:01" {
+                     "fe:f0:00:00:04:01"
+             }
+             "fe:f0:00:00:04:01" -> "fe:f0:00:00:05:01" [label="1.000"]
+             "fe:f0:00:00:04:01" -> "fe:f0:00:00:03:01" [label="1.004"]
+             "fe:f0:00:00:04:01" -> "00:00:43:05:00:04" [label="TT"]
+             "fe:f0:00:00:04:01" -> "fe:f1:00:00:04:01" [label="TT"]
+             subgraph "cluster_fe:f0:00:00:02:01" {
+                     "fe:f0:00:00:02:01"
+             }
+             "fe:f0:00:00:02:01" -> "fe:f0:00:00:03:01" [label="1.000"]
+             "fe:f0:00:00:02:01" -> "fe:f0:00:00:01:01" [label="1.008"]
+             "fe:f0:00:00:02:01" -> "fe:f0:00:00:08:01" [label="1.000"]
+             "fe:f0:00:00:02:01" -> "fe:f1:00:00:02:01" [label="TT"]
+             "fe:f0:00:00:02:01" -> "00:00:43:05:00:02" [label="TT"]
+             subgraph "cluster_fe:f0:00:00:08:01" {
+                     "fe:f0:00:00:08:01"
+             }
+     [...]
+     }
+.fi
+.br
+
+To get a json vis output:
+.br
+\fB     batadv-vis -f json\fP
+.nf
+     { "primary" : "fe:f0:00:00:04:01" }
+     { "router" : "fe:f0:00:00:04:01", "neighbor" : "fe:f0:00:00:05:01", "label" : "1.000" }
+     { "router" : "fe:f0:00:00:04:01", "neighbor" : "fe:f0:00:00:03:01", "label" : "1.008" }
+     { "router" : "fe:f0:00:00:04:01", "gateway" : "00:00:43:05:00:04", "label" : "TT" }
+     { "router" : "fe:f0:00:00:04:01", "gateway" : "fe:f1:00:00:04:01", "label" : "TT" }
+     { "primary" : "fe:f0:00:00:02:01" }
+     { "router" : "fe:f0:00:00:02:01", "neighbor" : "fe:f0:00:00:03:01", "label" : "1.000" }
+     { "router" : "fe:f0:00:00:02:01", "neighbor" : "fe:f0:00:00:01:01", "label" : "1.016" }
+     { "router" : "fe:f0:00:00:02:01", "neighbor" : "fe:f0:00:00:08:01", "label" : "1.000" }
+     { "router" : "fe:f0:00:00:02:01", "gateway" : "fe:f1:00:00:02:01", "label" : "TT" }
+     { "router" : "fe:f0:00:00:02:01", "gateway" : "00:00:43:05:00:02", "label" : "TT" }
+     { "primary" : "fe:f0:00:00:08:01" }
+     [...]
+.fi
+.br
+.
+.SH SEE ALSO
+.BR alfred (8),
+.BR batctl (8)
+.SH AUTHOR
+batadv\-vis was written by Simon Wunderlich <siwu@hrz.tu-chemnitz.de>.
+.PP
+This manual page was written by Simon Wunderlich <siwu@hrz.tu-chemnitz.de> and Sven Eckelmann <sven@open-mesh.com>.
