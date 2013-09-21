@@ -23,7 +23,7 @@ BINARY_NAME = alfred
 OBJ = main.o server.o client.o netsock.o send.o recv.o hash.o unix_sock.o util.o debugfs.o batadv_query.o
 
 # alfred flags and options
-CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD
+CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
 LDLIBS += -lrt
 
 # disable verbose output

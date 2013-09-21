@@ -23,7 +23,7 @@ BINARY_NAME = vis
 OBJ = vis.o debugfs.o
 
 # alfred flags and options
-CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD
+CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
 LDLIBS += -lrt
 
 # disable verbose output
