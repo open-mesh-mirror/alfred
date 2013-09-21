@@ -49,7 +49,7 @@ PREFIX = /usr/local
 SBINDIR = $(PREFIX)/sbin
 
 # try to generate revision
-REVISION= $(shell	if [ -d .git ]; then \
+REVISION= $(shell	if [ -d ../.git ]; then \
 				echo $$(git describe --always --dirty --match "v*" |sed 's/^v//' 2> /dev/null || echo "[unknown]"); \
 			fi)
 ifneq ($(REVISION),)
