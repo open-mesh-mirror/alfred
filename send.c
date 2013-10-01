@@ -24,20 +24,32 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <stdio.h>
 #include "alfred.h"
 #include "hash.h"
 #include "packet.h"
 
 int announce_master(struct globals *globals)
 {
+	ssize_t ret;
 	struct alfred_announce_master_v0 announcement;
+
+	if (globals->netsock < 0)
+		return -1;
 
 	announcement.header.type = ALFRED_ANNOUNCE_MASTER;
 	announcement.header.version = ALFRED_VERSION;
 	announcement.header.length = htons(0);
 
-	send_alfred_packet(globals, &in6addr_localmcast, &announcement,
-			   sizeof(announcement));
+	ret = send_alfred_packet(globals, &in6addr_localmcast, &announcement,
+				 sizeof(announcement));
+	if (ret == -EPERM) {
+		fprintf(stderr, "Error during announcement\n");
+		netsock_close(globals->netsock);
+		globals->netsock = -1;
+	}
+
 
 	return 0;
 }
@@ -146,10 +158,10 @@ int push_local_data(struct globals *globals)
 	return 0;
 }
 
-int send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
-		       void *buf, int length)
+ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
+			   void *buf, int length)
 {
-	int ret;
+	ssize_t ret;
 	struct sockaddr_in6 dest_addr;
 
 	memset(&dest_addr, 0, sizeof(dest_addr));
@@ -165,5 +177,5 @@ int send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 		     (struct sockaddr *)&dest_addr,
 		     sizeof(struct sockaddr_in6));
 
-	return (ret == length);
+	return ret;
 }

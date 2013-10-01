@@ -137,8 +137,8 @@ int push_data(struct globals *globals, struct in6_addr *destination,
 int announce_master(struct globals *globals);
 int push_local_data(struct globals *globals);
 int sync_data(struct globals *globals);
-int send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
-		       void *buf, int length);
+ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
+			   void *buf, int length);
 /* unix_sock.c */
 int unix_sock_read(struct globals *globals);
 int unix_sock_open_daemon(struct globals *globals, const char *path);
