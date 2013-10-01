@@ -49,6 +49,8 @@ int netsock_open(struct globals *globals)
 	struct sockaddr_in6 sin6;
 	struct ifreq ifr;
 
+	globals->netsock = -1;
+
 	sock = socket(PF_INET6, SOCK_DGRAM, 0);
 	if (sock  < 0) {
 		fprintf(stderr, "can't open socket: %s\n", strerror(errno));
@@ -59,7 +61,7 @@ int netsock_open(struct globals *globals)
 	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
 		fprintf(stderr, "can't get interface: %s\n", strerror(errno));
-		return -1;
+		goto err;
 	}
 
 	globals->scope_id = ifr.ifr_ifindex;
@@ -72,7 +74,7 @@ int netsock_open(struct globals *globals)
 
 	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
 		fprintf(stderr, "can't get MAC address: %s\n", strerror(errno));
-		return -1;
+		goto err;
 	}
 
 	memcpy(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
@@ -80,16 +82,19 @@ int netsock_open(struct globals *globals)
 
 	if (ioctl(sock, SIOCGIFMTU, &ifr) == -1) {
 		fprintf(stderr, "can't get MTU: %s\n", strerror(errno));
-		return -1;
+		goto err;
 	}
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
 		fprintf(stderr, "can't bind\n");
-		return -1;
+		goto err;
 	}
 
 	fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 	globals->netsock = sock;
 
 	return 0;
+err:
+	close(sock);
+	return -1;
 }
