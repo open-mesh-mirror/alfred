@@ -378,6 +378,9 @@ int recv_alfred_packet(struct globals *globals)
 	struct sockaddr_in6 source;
 	socklen_t sourcelen;
 
+	if (globals->netsock < 0)
+		return -1;
+
 	sourcelen = sizeof(source);
 	length = recvfrom(globals->netsock, buf, sizeof(buf), 0,
 			  (struct sockaddr *)&source, &sourcelen);

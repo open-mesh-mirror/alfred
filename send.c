@@ -158,6 +158,9 @@ int send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 	dest_addr.sin6_scope_id = globals->scope_id;
 	memcpy(&dest_addr.sin6_addr, dest, sizeof(*dest));
 
+	if (globals->netsock < 0)
+		return 0;
+
 	ret = sendto(globals->netsock, buf, length, 0,
 		     (struct sockaddr *)&dest_addr,
 		     sizeof(struct sockaddr_in6));

@@ -236,10 +236,6 @@ int alfred_server(struct globals *globals)
 	if (netsock_open(globals))
 		return -1;
 
-	maxsock = globals->netsock;
-	if (globals->unix_sock > maxsock)
-		maxsock = globals->unix_sock;
-
 	clock_gettime(CLOCK_MONOTONIC, &last_check);
 
 	while (1) {
@@ -250,9 +246,16 @@ int alfred_server(struct globals *globals)
 			tv.tv_nsec = 0;
 		}
 
+		maxsock = -1;
+		if (globals->netsock > maxsock)
+			maxsock = globals->netsock;
+		if (globals->unix_sock > maxsock)
+			maxsock = globals->unix_sock;
+
 		FD_ZERO(&fds);
 		FD_SET(globals->unix_sock, &fds);
-		FD_SET(globals->netsock, &fds);
+		if (globals->netsock >= 0)
+			FD_SET(globals->netsock, &fds);
 		ret = pselect(maxsock + 1, &fds, NULL, NULL, &tv, NULL);
 
 		if (ret == -1) {
@@ -263,7 +266,8 @@ int alfred_server(struct globals *globals)
 				printf("read unix socket\n");
 				unix_sock_read(globals);
 				continue;
-			} else if (FD_ISSET(globals->netsock, &fds)) {
+			} else if (globals->netsock >= 0 &&
+				   FD_ISSET(globals->netsock, &fds)) {
 				recv_alfred_packet(globals);
 				continue;
 			}
@@ -282,7 +286,8 @@ int alfred_server(struct globals *globals)
 		purge_data(globals);
 	}
 
-	netsock_close(globals->netsock);
+	if (globals->netsock >= 0)
+		netsock_close(globals->netsock);
 	unix_sock_close(globals);
 	return 0;
 }
