@@ -80,11 +80,6 @@ int netsock_open(struct globals *globals)
 	memcpy(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
 	mac_to_ipv6(&globals->hwaddr, &globals->address);
 
-	if (ioctl(sock, SIOCGIFMTU, &ifr) == -1) {
-		fprintf(stderr, "can't get MTU: %s\n", strerror(errno));
-		goto err;
-	}
-
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
 		fprintf(stderr, "can't bind\n");
 		goto err;
