@@ -246,6 +246,9 @@ int alfred_server(struct globals *globals)
 			tv.tv_nsec = 0;
 		}
 
+		if (globals->netsock < 0)
+			netsock_open(globals);
+
 		maxsock = -1;
 		if (globals->netsock > maxsock)
 			maxsock = globals->netsock;
