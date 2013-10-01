@@ -216,7 +216,7 @@ int alfred_server(struct globals *globals)
 {
 	int maxsock, ret;
 	struct timespec last_check, now, tv;
-	fd_set fds;
+	fd_set fds, errfds;
 
 	if (create_hashes(globals))
 		return -1;
@@ -253,15 +253,25 @@ int alfred_server(struct globals *globals)
 			maxsock = globals->unix_sock;
 
 		FD_ZERO(&fds);
+		FD_ZERO(&errfds);
 		FD_SET(globals->unix_sock, &fds);
-		if (globals->netsock >= 0)
+		if (globals->netsock >= 0) {
 			FD_SET(globals->netsock, &fds);
-		ret = pselect(maxsock + 1, &fds, NULL, NULL, &tv, NULL);
+			FD_SET(globals->netsock, &errfds);
+		}
+		ret = pselect(maxsock + 1, &fds, NULL, &errfds, &tv, NULL);
 
 		if (ret == -1) {
 			fprintf(stderr, "main loop select failed ...: %s\n",
 				strerror(errno));
 		} else if (ret) {
+			if (globals->netsock >= 0 &&
+			    FD_ISSET(globals->netsock, &errfds)) {
+				fprintf(stderr, "Error on netsock detected\n");
+				netsock_close(globals->netsock);
+				globals->netsock = -1;
+			}
+
 			if (FD_ISSET(globals->unix_sock, &fds)) {
 				printf("read unix socket\n");
 				unix_sock_read(globals);
