@@ -1,0 +1,92 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "ALFRED-GPSD" "8" "Oct 04, 2013" "Linux" "Alfred GPS distribution server"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.\" --------------------------------------------------------------------------
+.\" Process this file with
+.\" groff -man batadv-vis.8 -Tutf8
+.\" Retrieve format warnings with
+.\" man --warnings batadv-vis.8 > /dev/null
+.\" --------------------------------------------------------------------------
+.ad l
+.SH NAME
+alfred\-gpsd \- Alfred GPS distribution server
+.SH SYNOPSIS
+.B alfred\-gpsd [\fIoptions\fP]
+.br
+.SH DESCRIPTION
+alfred\-gpsd can be used to distribute GPS location information over
+your batman-adv mesh network. It reads the current location from gpsd,
+or a fixed location from the command line, and distributes this
+information via alfred. By gathering this local information, any
+alfred-gpsd node can get location information about other nodes.
+.PP
+.PP
+.SH OPTIONS
+.TP
+\fB\-v\fP, \fB\-\-version\fP
+Print the version
+.TP
+\fB\-h\fP, \fB\-\-help\fP
+Display a brief help message.
+.TP
+\fB\-s\fP, \fB\-\-server\fP
+Start up in server mode. This server will read the current location
+from gpsd and set it in alfred via unix socket. The alfred server must
+run too to get this information set.
+.TP
+\fB\-l\fP, \fB\-\-location <lat>,<lon>,<alt>\fP
+Rather than read the current location from gpsd, use a fixed location.
+.TP
+\fB\-g\fP, \fB\-\-gpsd server[:port[:device]]\fP
+Specify the server hostname and optional port of where gpsd is
+listening. Additionally, a specific device connected to gpsd can be specified.
+.
+.SH EXAMPLES
+Start an alfred\-gpsd server which is fetching GPS data from the local gpsd.
+.br
+\fB     alfred\-gpsd \-s\fP
+.br
+
+Start an alfred\-gpsd server with a fixed location
+.br
+\fB     alfred\-gpsd \-s \-l 48.858222,2.2945,358\fP
+.br
+
+To get a list of GPS locations, in JSON format:
+.br
+\fB     alfred-gpsd\fP
+.nf
+[
+  { "source" : "f6:00:48:13:d3:1e", "tpv" : {"class":"TPV","tag":"RMC",
+    "device":"/dev/ttyACM0","mode":3,"time":"2013-10-01T10:43:20.000Z",
+    "ept":0.005,"lat":52.575485000,"lon":-1.339716667,"alt":122.500,
+    "epx":10.199,"epy":15.720,"epv":31.050,"track":0.0000,"speed":0.010,
+    "climb":0.000,"eps":31.44} },
+  { "source" : "8e:4c:77:b3:65:b4", "tpv" : {"class":"TPV",
+    "device":"command line","time":"2013-10-01T10:43:05.129Z",
+    "lat":48.858222,"lon":2.2945,"alt":358.000000,"mode":3}
+  }
+]
+.fi
+.br
+.
+.SH SEE ALSO
+.BR alfred (8),
+.BR gpsd (8)
+.BR gpsd_json(5)
+.SH AUTHOR
+alfred\-gpsd and this Manual page was written by Andrew Lunn <andrew@lunn.ch>

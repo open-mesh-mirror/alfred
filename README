@@ -29,11 +29,14 @@ alfred depends on:
  * librt (usually part of libc)
  * IPv6 support in the kernel/host system
 
+and if distributing GPS information:
+ * libgps
+
 To compile alfred, simply type:
 
  $ make
 
-This will compile both alfred and batadv-vis. To install, use
+This will compile alfred, batadv-vis & alfred-gpsd. To install, use
 
  $ make install
 
@@ -43,6 +46,13 @@ If you don't want to compile batadv-vis, add the directive CONFIG_ALFRED_VIS=n:
 
  $ make CONFIG_ALFRED_VIS=n 
  $ make CONFIG_ALFRED_VIS=n install
+
+If you don't want to compile alfred-gpsd, add the directive
+CONFIG_ALFRED_GPSD=n:
+
+ $ make CONFIG_ALFRED_GPSD=n 
+ $ make CONFIG_ALFRED_GPSD=n install
+
 
 Usage
 -----
@@ -169,11 +179,47 @@ For a json formatted output, use:
 { "primary" : "fe:f0:00:00:08:01" }
 [...]
 
+Alfred-gpsd
+-----------
+
+Alfred-gpsd can be used to distibute GPS location information about
+your batman-adv mesh network. This information could be, for example,
+combined with Vis to visualize your mesh topology with true geographic
+layout. For mobile or nomadic nodes, Alfred-gpsd, can get location
+information from gpsd.  Alternatively, a static location can be passed
+on the command line, which is useful for static nodes without a GPS.
+
+Alfred-gpsd, similar to to alfred, combines server (daemon) and client
+functionality in the 'alfred-gpsd' binary. The alfred-gpsd server must
+be started to distribute location information. When retrieving
+location information from gpsd, it should be started with:
+
+ $ alfred-gpsd -s
+
+For a static location, use:
+
+ $ alfred-gpsd -s -l 48.858222,2.2945,358
+
+This server will set the location in alfred via unix
+socket. Obviously, the alfred server must run too to get this
+information set. When using gpsd, it updates alfred every 2
+seconds. With a static location, the update it made every 5 minutes.
+
+To get JSON formatted output, use:
+
+ $ alfred-gpsd
+[
+  { "source" : "f6:00:48:13:d3:1e", "tpv" : {"class":"TPV","tag":"RMC","device":"/dev/ttyACM0","mode":3,"time":"2013-10-01T10:43:20.000Z","ept":0.005,"lat":52.575485000,"lon":-1.339716667,"alt":122.500,"epx":10.199,"epy":15.720,"epv":31.050,"track":0.0000,"speed":0.010,"climb":0.000,"eps":31.44} },
+  { "source" : "8e:4c:77:b3:65:b4", "tpv" : {"class":"TPV","device":"command line","time":"2013-10-01T10:43:05.129Z","lat":48.858222,"lon":2.2945,"alt":358.000000,"mode":3} }
+]
+
+See gpsd_json(5) for documentation of the tpv object. 
+
 License
 -------
 
-alfred and batadv-vis are licensed under the terms of version 2 of the GNU
-General Public License (GPL). Please see the LICENSE file.
+alfred, batadv-vis and alfred-gpsd are licensed under the terms of version 2
+of the GNU General Public License (GPL). Please see the LICENSE file.
 
 The file "packet.h" is an exception and not licensed with the GPL. Instead,
 it is licensed using ISC license (see the head of this file). This allows
