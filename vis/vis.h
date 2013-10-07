@@ -49,7 +49,8 @@ enum opmode {
 
 enum vis_format {
 	FORMAT_DOT,
-	FORMAT_JSON
+	FORMAT_JSON,
+	FORMAT_JSONDOC,
 };
 
 struct vis_iface {

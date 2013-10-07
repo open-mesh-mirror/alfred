@@ -162,7 +162,7 @@ digraph {
 [...]
 }
 
-For a json formatted output, use:
+For a json line formatted output, use:
 
  $ batadv-vis -f json
 { "primary" : "fe:f0:00:00:04:01" }
@@ -177,6 +177,47 @@ For a json formatted output, use:
 { "router" : "fe:f0:00:00:02:01", "gateway" : "fe:f1:00:00:02:01", "label" : "TT" }
 { "router" : "fe:f0:00:00:02:01", "gateway" : "00:00:43:05:00:02", "label" : "TT" }
 { "primary" : "fe:f0:00:00:08:01" }
+[...]
+
+and for output where the complete document is json, use:
+
+ $ batadv-vis -f jsondoc
+{
+  "source_version" : "2013.3.0-14-gcd34783",
+  "algorithm" : 4,
+  "vis" : [
+    { "primary" : "fe:f0:00:00:04:01",
+      "neighbors" : [
+         { "router" : "fe:f0:00:00:04:01",
+           "neighbor" : "fe:f0:00:00:05:01",
+           "metric" : "1.000" },
+         { "router" : "fe:f0:00:00:04:01",
+           "neighbor" : "fe:f0:00:00:03:01",
+           "metric" : "1.008" }
+      ],
+      "clients" : [
+         "00:00:43:05:00:04",
+         "fe:f1:00:00:04:01"
+      ]
+    },
+    { "primary" : "fe:f0:00:00:02:01",
+      "neighbors" : [
+         { "router" : "fe:f0:00:00:02:01",
+           "neighbor" : "fe:f0:00:00:03:01",
+  	 "metric" : "1.000" },
+         { "router" : "fe:f0:00:00:02:01",
+           "neighbor" : "fe:f0:00:00:01:01",
+           "metric" : "1.016" },
+         { "router" : "fe:f0:00:00:02:01",
+           "neighbor" : "fe:f0:00:00:08:01",
+           "metric" : "1.000" }
+      ],
+      "clients" : [
+        "fe:f1:00:00:02:01",
+        "00:00:43:05:00:02"
+      ]
+    },
+    { "primary" : "fe:f0:00:00:08:01",
 [...]
 
 Alfred-gpsd

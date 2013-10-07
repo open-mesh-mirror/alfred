@@ -26,6 +26,7 @@
 #include <linux/if.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -511,18 +512,254 @@ static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len)
 	return (struct vis_v1 *) data->data;
 }
 
+static void vis_dot_preamble(void)
+{
+	printf("digraph {\n");
+}
+
+static void vis_dot_interfaces(uint8_t iface_n, struct vis_iface *ifaces)
+{
+	int i;
+
+	printf("\tsubgraph \"cluster_%s\" {\n", mac_to_str(ifaces[0].mac));
+	for (i = 0; i < iface_n; i++)
+		printf("\t\t\"%s\"%s\n", mac_to_str(ifaces[i].mac),
+		       i ? " [peripheries=2]":"");
+	printf("\t}\n");
+}
+
+static void vis_dot_entries(uint8_t entries_n, struct vis_entry *vis_entries,
+			    uint8_t iface_n, struct vis_iface *ifaces)
+{
+	int i;
+
+	for (i = 0; i < entries_n; i++) {
+		if (vis_entries[i].ifindex == 255) {
+			printf("\t\"%s\" ", mac_to_str(ifaces[0].mac));
+			printf("-> \"%s\" [label=\"TT\"]\n",
+			       mac_to_str(vis_entries[i].mac));
+		} else {
+			if (vis_entries[i].ifindex >= iface_n) {
+				fprintf(stderr, "ERROR: bad ifindex ...\n");
+				continue;
+			}
+			if (vis_entries[i].qual == 0) {
+				fprintf(stderr, "ERROR: quality = 0?\n");
+				continue;
+			}
+			printf("\t\"%s\" ",
+			       mac_to_str(ifaces[vis_entries[i].ifindex].mac));
+			printf("-> \"%s\" [label=\"%3.3f\"]\n",
+			       mac_to_str(vis_entries[i].mac),
+			       255.0 / ((float)vis_entries[i].qual));
+		}
+	}
+}
+
+static void vis_dot_postamble(void)
+{
+	printf("}\n");
+}
+
+static void vis_json_preamble(void)
+{
+}
+
+static void vis_json_interfaces(uint8_t iface_n, struct vis_iface *ifaces)
+{
+	int i;
+
+	printf("{ \"primary\" : \"%s\" }\n", mac_to_str(ifaces[0].mac));
+	for (i = 1; i < iface_n; i++) {
+		printf("{ \"secondary\" : \"%s\"", mac_to_str(ifaces[i].mac));
+		printf(", \"of\" : \"%s\" }\n", mac_to_str(ifaces[0].mac));
+	}
+}
+
+static void vis_json_entries(uint8_t entries_n, struct vis_entry *vis_entries,
+			     uint8_t iface_n, struct vis_iface *ifaces)
+{
+	int i;
+
+	for (i = 0; i < entries_n; i++) {
+		if (vis_entries[i].ifindex == 255) {
+			printf("{ \"router\" : \"%s\"",
+			       mac_to_str(ifaces[0].mac));
+			printf(", \"gateway\" : \"%s\", \"label\" : \"TT\" }\n",
+			       mac_to_str(vis_entries[i].mac));
+		} else {
+			if (vis_entries[i].ifindex >= iface_n) {
+				fprintf(stderr, "ERROR: bad ifindex ...\n");
+				continue;
+			}
+			if (vis_entries[i].qual == 0) {
+				fprintf(stderr, "ERROR: quality = 0?\n");
+				continue;
+			}
+			printf("{ \"router\" : \"%s\"",
+			       mac_to_str(ifaces[vis_entries[i].ifindex].mac));
+			printf(", \"neighbor\" : \"%s\", \"label\" : \"%3.3f\" }\n",
+			       mac_to_str(vis_entries[i].mac),
+			       255.0 / ((float)vis_entries[i].qual));
+		}
+	}
+}
+
+static void vis_json_postamble(void)
+{
+}
+
+static void vis_jsondoc_preamble(void)
+{
+	printf("{\n");
+	printf("  \"source_version\" : \"%s\",\n", SOURCE_VERSION);
+	printf("  \"algorithm\" : 4,\n");
+	printf("  \"vis\" : [\n");
+}
+
+static void vis_jsondoc_interfaces(uint8_t iface_n, struct vis_iface *ifaces)
+{
+	int i;
+	static bool first_interface = true;
+
+	if (first_interface)
+		first_interface = false;
+	else
+		printf(",\n");
+
+	printf("    { \"primary\" : \"%s\",\n", mac_to_str(ifaces[0].mac));
+	if (iface_n > 1) {
+		printf("      \"secondary\" : [ ");
+		for (i = 1; i < iface_n; i++) {
+			printf("\"%s\"", mac_to_str(ifaces[i].mac));
+			if ( i < iface_n - 1)
+				printf(",");
+		}
+		printf("\n       ],\n");
+	}
+}
+
+static void vis_jsondoc_entries(uint8_t entries_n,
+				struct vis_entry *vis_entries,
+				uint8_t iface_n, struct vis_iface *ifaces)
+{
+	bool first_neighbor = true;
+	bool first_tt = true;
+	int i;
+
+	printf("      \"neighbors\" : [\n");
+
+	for (i = 0; i < entries_n; i++) {
+		if (vis_entries[i].ifindex == 255) {
+			continue;
+		}
+
+		if (vis_entries[i].ifindex >= iface_n) {
+			fprintf(stderr, "ERROR: bad ifindex ...\n");
+			continue;
+		}
+		if (vis_entries[i].qual == 0) {
+			fprintf(stderr, "ERROR: quality = 0?\n");
+			continue;
+		}
+
+		if (first_neighbor)
+			first_neighbor = false;
+		else
+			printf(",\n");
+
+		printf("         { \"router\" : \"%s\",\n",
+		       mac_to_str(ifaces[vis_entries[i].ifindex].mac));
+		printf("           \"neighbor\" : \"%s\",\n",
+		       mac_to_str(vis_entries[i].mac));
+		printf("           \"metric\" : \"%3.3f\" }",
+		       255.0 / ((float)vis_entries[i].qual));
+	}
+
+	printf("\n      ],\n");
+
+	printf("      \"clients\" : [\n");
+
+	for (i = 0; i < entries_n; i++) {
+		if (vis_entries[i].ifindex == 255) {
+			if (first_tt)
+				first_tt = false;
+			else
+				printf(",\n");
+
+			printf("        \"%s\"",
+			       mac_to_str(vis_entries[i].mac));
+		}
+	}
+	printf("\n      ]\n");
+	printf("    }");
+}
+
+static void vis_jsondoc_postamble(void)
+{
+	printf("\n  ]\n");
+	printf("}\n");
+}
+
+struct vis_print_ops
+{
+	void (*preamble)(void);
+	void (*interfaces)(uint8_t iface_n, struct vis_iface *ifaces);
+	void (*entries)(uint8_t entries_n, struct vis_entry *vis_entries,
+			uint8_t iface_n, struct vis_iface *ifaces);
+	void (*postamble)(void);
+};
+
+static const struct vis_print_ops vis_dot_ops =
+{
+	vis_dot_preamble,
+	vis_dot_interfaces,
+	vis_dot_entries,
+	vis_dot_postamble
+};
+
+static const struct vis_print_ops vis_json_ops =
+{
+	vis_json_preamble,
+	vis_json_interfaces,
+	vis_json_entries,
+	vis_json_postamble
+};
+
+static const struct vis_print_ops vis_jsondoc_ops =
+{
+	vis_jsondoc_preamble,
+	vis_jsondoc_interfaces,
+	vis_jsondoc_entries,
+	vis_jsondoc_postamble
+};
+
 static int vis_read_answer(struct globals *globals)
 {
+	const struct vis_print_ops *ops;
 	struct vis_v1 *vis_data;
 	uint16_t len;
 	struct vis_iface *ifaces;
 	struct vis_entry *vis_entries;
-	int i;
 
-	if (globals->vis_format == FORMAT_DOT)
-		printf("digraph {\n");
+	switch (globals->vis_format) {
+	case FORMAT_DOT:
+		ops = &vis_dot_ops;
+		break;
+	case FORMAT_JSON:
+		ops = &vis_json_ops;
+		break;
+	case FORMAT_JSONDOC:
+		ops = &vis_jsondoc_ops;
+		break;
+	default:
+		return -1;
+	}
 
-	while ((vis_data = vis_receive_answer_packet(globals->unix_sock, &len)) != NULL) {
+	ops->preamble();
+
+	while ((vis_data =
+		vis_receive_answer_packet(globals->unix_sock, &len)) != NULL) {
 		if (len < sizeof(*vis_data))
 			return -1;
 
@@ -536,60 +773,15 @@ static int vis_read_answer(struct globals *globals)
 		ifaces = vis_data->ifaces;
 		vis_entries = (struct vis_entry *) &ifaces[vis_data->iface_n];
 
-		if (globals->vis_format == FORMAT_DOT) {
-			printf("\tsubgraph \"cluster_%s\" {\n", mac_to_str(ifaces[0].mac));
-			for (i = 0; i < vis_data->iface_n; i++)
-				printf("\t\t\"%s\"%s\n", mac_to_str(ifaces[i].mac),
-				       i ? " [peripheries=2]":"");
-			printf("\t}\n");
-		} else if (globals->vis_format == FORMAT_JSON) {
-			printf("{ \"primary\" : \"%s\" }\n", mac_to_str(ifaces[0].mac));
-			for (i = 1; i < vis_data->iface_n; i++) {
-				printf("{ \"secondary\" : \"%s\"", mac_to_str(ifaces[i].mac));
-				printf(", \"of\" : \"%s\" }\n", mac_to_str(ifaces[0].mac));
-			}
-		}
+		ops->interfaces(vis_data->iface_n, ifaces);
 
 		if (vis_data->entries_n == 0)
 			continue;
 
-                for (i = 0; i < vis_data->entries_n; i++) {
-			if (vis_entries[i].ifindex == 255) {
-				if (globals->vis_format == FORMAT_DOT) {
-					printf("\t\"%s\" ", mac_to_str(ifaces[0].mac));
-					printf("-> \"%s\" [label=\"TT\"]\n", mac_to_str(vis_entries[i].mac));
-				} else if (globals->vis_format == FORMAT_JSON) {
-					printf("{ \"router\" : \"%s\"", mac_to_str(ifaces[0].mac));
-					printf(", \"gateway\" : \"%s\", \"label\" : \"TT\" }\n", mac_to_str(vis_entries[i].mac));
-				}
-			} else {
-				if (vis_entries[i].ifindex >= vis_data->iface_n) {
-					fprintf(stderr, "ERROR: bad ifindex ...\n");
-					continue;
-				}
-				if (vis_entries[i].qual == 0) {
-					fprintf(stderr, "ERROR: quality = 0?\n");
-					continue;
-				}
-				if (globals->vis_format == FORMAT_DOT) {
-					printf("\t\"%s\" ",
-					       mac_to_str(ifaces[vis_entries[i].ifindex].mac));
-					printf("-> \"%s\" [label=\"%3.3f\"]\n",
-					       mac_to_str(vis_entries[i].mac),
-					       255.0 / ((float)vis_entries[i].qual));
-				} else if (globals->vis_format == FORMAT_JSON) {
-					printf("{ \"router\" : \"%s\"",
-					       mac_to_str(ifaces[vis_entries[i].ifindex].mac));
-					printf(", \"neighbor\" : \"%s\", \"label\" : \"%3.3f\" }\n",
-					       mac_to_str(vis_entries[i].mac),
-					       255.0 / ((float)vis_entries[i].qual));
-
-				}
-			}
-		}
+		ops->entries(vis_data->entries_n, vis_entries,
+			     vis_data->iface_n, ifaces);
 	}
-	if (globals->vis_format == FORMAT_DOT)
-		printf("}\n");
+	ops->postamble();
 
 	return 0;
 }
@@ -611,7 +803,7 @@ static void vis_usage(void)
 	printf("Usage: batadv-vis [options]\n");
 	printf("  -i, --interface             specify the batman-adv interface configured on the system (default: bat0)\n");
 	printf("  -s, --server                start up in server mode, which regularly updates vis data from batman-adv\n");
-	printf("  -f, --format <format>       specify the output format for client mode (either \"json\" or \"dot\")\n");
+	printf("  -f, --format <format>       specify the output format for client mode (either \"json\", \"jsondoc\" or \"dot\")\n");
 	printf("  -v, --version               print the version\n");
 	printf("  -h, --help                  this help\n");
 	printf("\n");
@@ -649,6 +841,8 @@ static struct globals *vis_init(int argc, char *argv[])
 		case 'f':
 			if (strncmp(optarg, "dot", 3) == 0)
 				globals->vis_format = FORMAT_DOT;
+			else if (strncmp(optarg, "jsondoc", 7) == 0)
+				globals->vis_format = FORMAT_JSONDOC;
 			else if (strncmp(optarg, "json", 4) == 0)
 				globals->vis_format = FORMAT_JSON;
 			else {

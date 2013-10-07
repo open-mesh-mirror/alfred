@@ -51,7 +51,7 @@ information from batman-adv every 10 seconds and set it in alfred via unix
 socket. The alfred server must run too to get this information set.
 .TP
 \fB\-f\fP, \fB\-\-format\fP \fIformat\fP
-Specify the output format for client mode (either "json" or "dot")
+Specify the output format for client mode (either "json", "jsondoc" or "dot")
 .
 .SH EXAMPLES
 Start an batadv\-vis server which is fetching the information for bat0:
@@ -106,6 +106,49 @@ To get a json vis output:
      [...]
 .fi
 .br
+
+To get output where the complete document is json:
+.br
+\fB     batadv-vis -f jsondoc\fP
+.nf
+     {
+       "source_version" : "2013.3.0-14-gcd34783",
+       "algorithm" : 4,
+       "vis" : [
+         { "primary" : "fe:f0:00:00:04:01",
+           "neighbors" : [
+              { "router" : "fe:f0:00:00:04:01",
+                "neighbor" : "fe:f0:00:00:05:01",
+                "metric" : "1.000" },
+              { "router" : "fe:f0:00:00:04:01",
+                "neighbor" : "fe:f0:00:00:03:01",
+                "metric" : "1.008" }
+           ],
+           "clients" : [
+              "00:00:43:05:00:04",
+              "fe:f1:00:00:04:01"
+           ]
+         },
+         { "primary" : "fe:f0:00:00:02:01",
+           "neighbors" : [
+              { "router" : "fe:f0:00:00:02:01",
+                "neighbor" : "fe:f0:00:00:03:01",
+       	 "metric" : "1.000" },
+              { "router" : "fe:f0:00:00:02:01",
+                "neighbor" : "fe:f0:00:00:01:01",
+                "metric" : "1.016" },
+              { "router" : "fe:f0:00:00:02:01",
+                "neighbor" : "fe:f0:00:00:08:01",
+                "metric" : "1.000" }
+           ],
+           "clients" : [
+             "fe:f1:00:00:02:01",
+             "00:00:43:05:00:02"
+           ]
+         },
+         { "primary" : "fe:f0:00:00:08:01",
+     [...]
+
 .
 .SH SEE ALSO
 .BR alfred (8),
