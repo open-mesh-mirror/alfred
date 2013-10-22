@@ -49,7 +49,7 @@ ifeq ($(origin LIBGPS_CFLAGS) $(origin LIBGPS_LDLIBS), undefined undefined)
     $(error No $(LIBGPS_NAME) development libraries found!)
   endif
   LIBGPS_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBGPS_NAME))
-  LIBGPS_LDLIBS +=  $(shell $(PKG_CONFIG) --libs $(LIBGPS_NAME))
+  LIBGPS_LDLIBS +=  $(shell $(PKG_CONFIG) --libs $(LIBGPS_NAME)) -lm
 endif
 CFLAGS += $(LIBGPS_CFLAGS)
 LDLIBS += $(LIBGPS_LDLIBS)
