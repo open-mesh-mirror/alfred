@@ -1,3 +1,10 @@
+alfred 2014.0.0:
+
+ * add installation of the alfred-gpsd manpage
+ * add -lm to linker flags for libgps in alfred-gpsd
+
+ -- Sat, 04 Jan 2014 20:17:07 +0100
+
 alfred 2013.4.0:
 
  * add new json output format for vis
