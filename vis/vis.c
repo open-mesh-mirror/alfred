@@ -96,7 +96,7 @@ static uint8_t *str_to_mac(char *str)
 static int get_if_mac(char *ifname, uint8_t *mac)
 {
 	struct ifreq ifr;
-	int sock;
+	int sock, ret;
 
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 
@@ -105,7 +105,11 @@ static int get_if_mac(char *ifname, uint8_t *mac)
 		return -1;
 	}
 
-	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
+	ret = ioctl(sock, SIOCGIFHWADDR, &ifr);
+
+	close(sock);
+
+	if (ret == -1) {
 		fprintf(stderr, "can't get MAC address: %s\n", strerror(errno));
 		return -1;
 	}
