@@ -38,7 +38,7 @@
 #include "../list.h"
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2014.1.0"
+#define SOURCE_VERSION				"2014.2.0"
 #endif
 
 #define ALFRED_SOCK_PATH			"/var/run/alfred.sock"
