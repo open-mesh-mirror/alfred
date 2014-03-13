@@ -1,3 +1,9 @@
+alfred 2014.1.0:
+
+ * don't leak socket fd in batadv-vis
+
+ -- Thu, 13 Mar 2014 12:10:26 +0100
+
 alfred 2014.0.0:
 
  * add installation of the alfred-gpsd manpage
