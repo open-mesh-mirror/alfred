@@ -20,14 +20,19 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <net/ethernet.h>
+#include <net/if.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <time.h>
 #include "alfred.h"
 #include "batadv_query.h"
@@ -212,6 +217,64 @@ static int purge_data(struct globals *globals)
 	return 0;
 }
 
+static void check_if_socket(struct globals *globals)
+{
+	struct timespec now, diff;
+	int sock;
+	struct ifreq ifr;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	time_diff(&now, &globals->if_check, &diff);
+
+	if (diff.tv_sec < ALFRED_IF_CHECK_INTERVAL)
+		return;
+
+	globals->if_check = now;
+
+	if (globals->netsock < 0)
+		return;
+
+	sock = socket(PF_INET6, SOCK_DGRAM, 0);
+	if (sock < 0) {
+		fprintf(stderr, "can't open socket: %s\n", strerror(errno));
+		return;
+	}
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
+		fprintf(stderr, "can't get interface: %s, closing netsock\n",
+			strerror(errno));
+		goto close;
+	}
+
+	if (globals->scope_id != (uint32_t)ifr.ifr_ifindex) {
+		fprintf(stderr,
+			"iface index changed from %"PRIu32" to %d, closing netsock\n",
+			globals->scope_id, ifr.ifr_ifindex);
+		goto close;
+	}
+
+	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
+		fprintf(stderr, "can't get MAC address: %s, closing netsock\n",
+			strerror(errno));
+		goto close;
+	}
+
+	if (memcmp(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6) != 0) {
+		fprintf(stderr, "iface mac changed, closing netsock\n");
+		goto close;
+	}
+
+	close(sock);
+	return;
+
+close:
+	netsock_close(globals->netsock);
+	globals->netsock = -1;
+	close(sock);
+}
+
 int alfred_server(struct globals *globals)
 {
 	int maxsock, ret;
@@ -237,6 +300,7 @@ int alfred_server(struct globals *globals)
 		return -1;
 
 	clock_gettime(CLOCK_MONOTONIC, &last_check);
+	globals->if_check = last_check;
 
 	while (1) {
 		clock_gettime(CLOCK_MONOTONIC, &now);
@@ -297,6 +361,7 @@ int alfred_server(struct globals *globals)
 			push_local_data(globals);
 		}
 		purge_data(globals);
+		check_if_socket(globals);
 	}
 
 	if (globals->netsock >= 0)

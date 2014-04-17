@@ -31,6 +31,7 @@
 #include "packet.h"
 
 #define ALFRED_INTERVAL			10
+#define ALFRED_IF_CHECK_INTERVAL	60
 #define ALFRED_REQUEST_TIMEOUT		10
 #define ALFRED_SERVER_TIMEOUT		60
 #define ALFRED_DATA_TIMEOUT		600
@@ -101,6 +102,8 @@ struct globals {
 
 	int netsock;
 	int unix_sock;
+
+	struct timespec if_check;
 
 	struct hashtable_t *server_hash;
 	struct hashtable_t *data_hash;
