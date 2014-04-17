@@ -32,7 +32,6 @@
 
 int announce_master(struct globals *globals)
 {
-	ssize_t ret;
 	struct alfred_announce_master_v0 announcement;
 
 	if (globals->netsock < 0)
@@ -42,14 +41,8 @@ int announce_master(struct globals *globals)
 	announcement.header.version = ALFRED_VERSION;
 	announcement.header.length = htons(0);
 
-	ret = send_alfred_packet(globals, &in6addr_localmcast, &announcement,
-				 sizeof(announcement));
-	if (ret == -EPERM) {
-		fprintf(stderr, "Error during announcement\n");
-		netsock_close(globals->netsock);
-		globals->netsock = -1;
-	}
-
+	send_alfred_packet(globals, &in6addr_localmcast, &announcement,
+			   sizeof(announcement));
 
 	return 0;
 }
@@ -176,6 +169,11 @@ ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 	ret = sendto(globals->netsock, buf, length, 0,
 		     (struct sockaddr *)&dest_addr,
 		     sizeof(struct sockaddr_in6));
+	if (ret == -EPERM) {
+		fprintf(stderr, "Error during sent\n");
+		netsock_close(globals->netsock);
+		globals->netsock = -1;
+	}
 
 	return ret;
 }
