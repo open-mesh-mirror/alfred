@@ -1,3 +1,11 @@
+alfred 2014.2.0:
+
+ * Handle EPERM errors on every sendto
+ * Check for changed interface properties, e.g. recreation or
+   changed MAC- and IPv6 addresses
+
+ -- Thu, 15 May 2014 19:41:44 +0200
+
 alfred 2014.1.0:
 
  * don't leak socket fd in batadv-vis
