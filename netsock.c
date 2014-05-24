@@ -59,6 +59,7 @@ int netsock_open(struct globals *globals)
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
 		fprintf(stderr, "can't get interface: %s\n", strerror(errno));
 		goto err;

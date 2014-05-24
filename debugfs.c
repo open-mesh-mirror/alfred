@@ -154,6 +154,7 @@ char *debugfs_mount(const char *mountpoint)
 
 	/* save the mountpoint */
 	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
+	debugfs_mountpoint[sizeof(debugfs_mountpoint) - 1] = '\0';
 	debugfs_found = 1;
 
 	return debugfs_mountpoint;

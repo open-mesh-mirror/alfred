@@ -102,6 +102,7 @@ static int get_if_mac(char *ifname, uint8_t *mac)
 	int sock, ret;
 
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		fprintf(stderr, "can't get interface: %s\n", strerror(errno));
