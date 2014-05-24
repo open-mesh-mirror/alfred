@@ -370,7 +370,7 @@ static void gpsd_parse_location(struct globals *globals,
 		exit(EXIT_FAILURE);
 	}
 
-	if ((alt < -1000) || (lon > 9000)) {
+	if ((alt < -1000) || (alt > 9000)) {
 		/* No support for aircraft or submarines! */
 		printf("Invalid altitude\n");
 		gpsd_usage();
