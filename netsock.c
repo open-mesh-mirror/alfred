@@ -48,6 +48,7 @@ int netsock_open(struct globals *globals)
 	int sock;
 	struct sockaddr_in6 sin6;
 	struct ifreq ifr;
+	int ret;
 
 	globals->netsock = -1;
 
@@ -86,7 +87,18 @@ int netsock_open(struct globals *globals)
 		goto err;
 	}
 
-	fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+	ret = fcntl(sock, F_GETFL, 0);
+	if (ret < 0) {
+		fprintf(stderr, "failed to get file status flags\n");
+		goto err;
+	}
+
+	ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
+	if (ret < 0) {
+		fprintf(stderr, "failed to set file status flags\n");
+		goto err;
+	}
+
 	globals->netsock = sock;
 
 	return 0;
