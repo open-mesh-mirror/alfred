@@ -168,7 +168,8 @@ static int alfred_open_sock(struct globals *globals)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strcpy(addr.sun_path, ALFRED_SOCK_PATH);
+	strncpy(addr.sun_path, ALFRED_SOCK_PATH, sizeof(addr.sun_path));
+	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {

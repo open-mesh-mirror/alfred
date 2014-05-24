@@ -78,7 +78,9 @@ static const char *debugfs_find_mountpoint(void)
 	while (*ptr) {
 		if (debugfs_valid_mountpoint(*ptr) == 0) {
 			debugfs_found = 1;
-			strcpy(debugfs_mountpoint, *ptr);
+			strncpy(debugfs_mountpoint, *ptr,
+				sizeof(debugfs_mountpoint));
+			debugfs_mountpoint[sizeof(debugfs_mountpoint) - 1] = 0;
 			return debugfs_mountpoint;
 		}
 		ptr++;

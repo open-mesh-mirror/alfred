@@ -36,7 +36,8 @@ static int alfred_open_sock(struct globals *globals)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strcpy(addr.sun_path, ALFRED_SOCK_PATH);
+	strncpy(addr.sun_path, ALFRED_SOCK_PATH, sizeof(addr.sun_path));
+	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
@@ -300,6 +301,10 @@ static void gpsd_read_gpsd(struct globals *globals)
 	size_t cnt;
 	bool eol = false;
 	char buf[4096];
+	const size_t tpv_size = sizeof(*globals->buf) -
+				sizeof(*globals->push) -
+				sizeof(struct alfred_data) -
+				sizeof(*globals->gpsd_data);
 
 	cnt = 0;
 	do {
@@ -328,7 +333,9 @@ static void gpsd_read_gpsd(struct globals *globals)
 
 #define STARTSWITH(str, prefix)	strncmp(str, prefix, sizeof(prefix)-1)==0
 	if (STARTSWITH(buf, "{\"class\":\"TPV\"")) {
-		strcpy(globals->gpsd_data->tpv, buf);
+		strncpy(globals->gpsd_data->tpv, buf, tpv_size);
+		globals->gpsd_data->tpv[tpv_size - 1] = '\0';
+
 		globals->gpsd_data->tpv_len =
 			htonl(strlen(globals->gpsd_data->tpv) + 1);
 	}
@@ -443,6 +450,10 @@ static int gpsd_server(struct globals *globals)
 	int max_fd, ret;
 	const size_t overhead = sizeof(*globals->push) +
 		sizeof(struct alfred_data);
+	const size_t tpv_size = sizeof(*globals->buf) -
+				sizeof(*globals->push) -
+				sizeof(struct alfred_data) -
+				sizeof(*globals->gpsd_data);
 	long interval;
 
 	globals->push = (struct alfred_push_data_v0 *) globals->buf;
@@ -456,7 +467,8 @@ static int gpsd_server(struct globals *globals)
 	globals->push->data->header.type = GPSD_PACKETTYPE;
 	globals->push->data->header.version = GPSD_PACKETVERSION;
 
-	strcpy(globals->gpsd_data->tpv, GPSD_INIT_TPV);
+	strncpy(globals->gpsd_data->tpv, GPSD_INIT_TPV, tpv_size);
+	globals->gpsd_data->tpv[tpv_size - 1] = '\0';
 	globals->gpsd_data->tpv_len =
 		htonl(strlen(globals->gpsd_data->tpv) + 1);
 

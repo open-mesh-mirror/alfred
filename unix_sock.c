@@ -50,7 +50,8 @@ int unix_sock_open_daemon(struct globals *globals, const char *path)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strcpy(addr.sun_path, path);
+	strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (bind(globals->unix_sock, (struct sockaddr *)&addr,
 		 sizeof(addr)) < 0) {
@@ -81,7 +82,8 @@ int unix_sock_open_client(struct globals *globals, const char *path)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strcpy(addr.sun_path, path);
+	strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
