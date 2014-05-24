@@ -38,6 +38,7 @@ int alfred_client_request_data(struct globals *globals)
 	struct alfred_tlv *tlv;
 	struct alfred_data *data;
 	int ret, len, data_len, i;
+	const size_t buf_data_len = sizeof(buf) - sizeof(*push) - sizeof(*data);
 
 	if (unix_sock_open_client(globals, ALFRED_SOCK_PATH))
 		return -1;
@@ -88,7 +89,7 @@ int alfred_client_request_data(struct globals *globals)
 		data_len = ntohs(data->header.length);
 
 		/* would it fit? it should! */
-		if (data_len > (int)(sizeof(buf) - sizeof(*push)))
+		if (data_len > (int)buf_data_len)
 			break;
 
 		/* read the data */
