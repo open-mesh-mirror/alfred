@@ -40,7 +40,7 @@
 static char *read_file(char *fname)
 {
 	FILE *fp;
-	char *buf = NULL;
+	char *buf = NULL, *buf_tmp;
 	size_t size, ret;
 
 	fp = fopen(fname, "r");
@@ -51,10 +51,13 @@ static char *read_file(char *fname)
 	size = 0;
 	while (!feof(fp)) {
 
-		buf = realloc(buf, size + 4097);
-		if (!buf)
+		buf_tmp = realloc(buf, size + 4097);
+		if (!buf_tmp) {
+			free(buf);
 			return NULL;
+		}
 
+		buf = buf_tmp;
 		ret = fread(buf + size, 1, 4096, fp);
 		size += ret;
 	}
