@@ -63,6 +63,40 @@ void hash_delete(struct hashtable_t *hash, hashdata_free_cb free_cb)
 	hash_destroy(hash);
 }
 
+/* adds data to the hashtable and reuse bucket.
+ * returns 0 on success, -1 on error  */
+static int hash_add_bucket(struct hashtable_t *hash, void *data,
+			   struct element_t *bucket, int check_duplicate)
+{
+	int index;
+	struct element_t *bucket_it, *prev_bucket = NULL;
+
+	index = hash->choose(data, hash->size);
+	bucket_it = hash->table[index];
+
+	while (bucket_it != NULL) {
+		if (check_duplicate &&
+		    hash->compare(bucket_it->data, data))
+			return -1;
+
+		prev_bucket = bucket_it;
+		bucket_it = bucket_it->next;
+	}
+
+	/* init the new bucket */
+	bucket->data = data;
+	bucket->next = NULL;
+
+	/* and link it */
+	if (prev_bucket == NULL)
+		hash->table[index] = bucket;
+	else
+		prev_bucket->next = bucket;
+
+	hash->elements++;
+	return 0;
+}
+
 /* free only the hashtable and the hash itself. */
 void hash_destroy(struct hashtable_t *hash)
 {
@@ -186,19 +220,8 @@ struct hashtable_t *hash_new(int size, hashdata_compare_cb compare,
 /* adds data to the hashtable. returns 0 on success, -1 on error */
 int hash_add(struct hashtable_t *hash, void *data)
 {
-	int index;
-	struct element_t *bucket, *prev_bucket = NULL;
-
-	index = hash->choose(data, hash->size);
-	bucket = hash->table[index];
-
-	while (bucket != NULL) {
-		if (hash->compare(bucket->data, data))
-			return -1;
-
-		prev_bucket = bucket;
-		bucket = bucket->next;
-	}
+	int ret;
+	struct element_t *bucket;
 
 	/* found the tail of the list, add new element */
 	bucket = debugMalloc(sizeof(struct element_t), 304);
@@ -206,18 +229,11 @@ int hash_add(struct hashtable_t *hash, void *data)
 	if (!bucket)
 		return -1;
 
-	/* init the new bucket */
-	bucket->data = data;
-	bucket->next = NULL;
+	ret = hash_add_bucket(hash, data, bucket, 1);
+	if (ret < 0)
+		debugFree(bucket, 1307);
 
-	/* and link it */
-	if (prev_bucket == NULL)
-		hash->table[index] = bucket;
-	else
-		prev_bucket->next = bucket;
-
-	hash->elements++;
-	return 0;
+	return ret;
 }
 
 /* finds data, based on the key in keydata. returns the found data on success,
@@ -307,10 +323,10 @@ struct hashtable_t *hash_resize(struct hashtable_t *hash, int size)
 
 	/* copy the elements */
 	for (i = 0; i < hash->size; i++) {
-		bucket = hash->table[i];
-		while (bucket != NULL) {
-			hash_add(new_hash, bucket->data);
-			bucket = bucket->next;
+		while (hash->table[i]) {
+			bucket = hash->table[i];
+			hash->table[i] = bucket->next;
+			hash_add_bucket(new_hash, bucket->data, bucket, 0);
 		}
 	}
 	/* remove hash and eventual overflow buckets but not the
