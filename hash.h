@@ -102,4 +102,7 @@ void hash_debug(struct hashtable_t *hash);
 struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 			       struct hash_it_t *iter_in);
 
+/* free hash_it_t pointer when stopping hash_iterate early */
+void hash_iterate_free(struct hash_it_t *iter_in);
+
 #endif

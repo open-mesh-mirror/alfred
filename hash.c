@@ -70,6 +70,12 @@ void hash_destroy(struct hashtable_t *hash)
 	debugFree(hash, 1303);
 }
 
+/* free hash_it_t pointer when stopping hash_iterate early */
+void hash_iterate_free(struct hash_it_t *iter_in)
+{
+	debugFree(iter_in, 1304);
+}
+
 /* iterate though the hash. first element is selected with iter_in NULL.
  * use the returned iterator to access the elements until hash_it_t returns
  * NULL. */
@@ -149,7 +155,7 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 	}
 
 	/* nothing to iterate over anymore */
-	debugFree(iter, 1304);
+	hash_iterate_free(iter);
 	return NULL;
 }
 

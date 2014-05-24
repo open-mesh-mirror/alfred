@@ -192,6 +192,7 @@ static int unix_sock_req_data_reply(struct globals *globals, int client_sock,
 
 		if (write(client_sock, buf, sizeof(push->header) + len) < 0) {
 			ret = -1;
+			hash_iterate_free(hashit);
 			break;
 		}
 	}
