@@ -213,8 +213,10 @@ static int parse_transtable_local(struct globals *globals)
 					continue;
 
 				mac = str_to_mac(tptr);
-				if (!mac)
+				if (!mac) {
+					free(v_entry);
 					continue;
+				}
 
 				memcpy(v_entry->v.mac, mac, ETH_ALEN);
 				v_entry->v.ifindex = 255;
