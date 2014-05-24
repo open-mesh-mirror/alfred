@@ -350,7 +350,7 @@ static int parse_orig_list(struct globals *globals)
 			default: break;
 			}
 		}
-		if (tnum >= 4) {
+		if (tnum > 4) {
 			if (strcmp(dest, neigh) == 0) {
 				tq_val = strtol(tq, NULL, 10);
 				if (tq_val < 1 || tq_val > 255)
