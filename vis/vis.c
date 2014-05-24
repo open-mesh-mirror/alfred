@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include "debugfs.h"
 
+static struct globals vis_globals;
+
 static char *read_file(char *fname)
 {
 	FILE *fp;
@@ -832,10 +834,7 @@ static struct globals *vis_init(int argc, char *argv[])
 		{NULL,		0,			NULL,	0},
 	};
 
-	globals = malloc(sizeof(*globals));
-	if (!globals)
-		return NULL;
-
+	globals = &vis_globals;
 	memset(globals, 0, sizeof(*globals));
 
 	globals->opmode = OPMODE_CLIENT;

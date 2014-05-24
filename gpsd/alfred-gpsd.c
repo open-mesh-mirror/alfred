@@ -21,6 +21,8 @@
 
 #include "alfred-gpsd.h"
 
+static struct globals gpsd_globals;
+
 static int alfred_open_sock(struct globals *globals)
 {
 	struct sockaddr_un addr;
@@ -394,10 +396,7 @@ static struct globals *gpsd_init(int argc, char *argv[])
 		{NULL,		0,			NULL,	0},
 	};
 
-	globals = malloc(sizeof(*globals));
-	if (!globals)
-		return NULL;
-
+	globals = &gpsd_globals;
 	memset(globals, 0, sizeof(*globals));
 
 	globals->opmode = OPMODE_CLIENT;

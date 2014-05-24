@@ -27,6 +27,7 @@
 #include "alfred.h"
 #include "packet.h"
 
+static struct globals alfred_globals;
 
 static void alfred_usage(void)
 {
@@ -69,10 +70,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{NULL,		0,			NULL,	0},
 	};
 
-	globals = malloc(sizeof(*globals));
-	if (!globals)
-		return NULL;
-
+	globals = &alfred_globals;
 	memset(globals, 0, sizeof(*globals));
 
 	globals->opmode = OPMODE_SLAVE;
