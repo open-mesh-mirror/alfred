@@ -56,6 +56,7 @@ static char *read_file(char *fname)
 		buf_tmp = realloc(buf, size + 4097);
 		if (!buf_tmp) {
 			free(buf);
+			fclose(fp);
 			return NULL;
 		}
 
