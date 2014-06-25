@@ -315,15 +315,16 @@ static void gpsd_read_gpsd(struct globals *globals)
 			return;
 		}
 
-		if (buf[cnt] == '\r')
+		switch (buf[cnt]) {
+		case '\r':
 			cnt--;
-
-		if (buf[cnt] == '\n') {
+			break;
+		case '\n':
 			eol = true;
 			buf[cnt] = '\0';
 			break;
 		}
-	} while (cnt++ < sizeof(buf) - 1);
+	} while (cnt++ < sizeof(buf) - 1 && !eol);
 
 	if (!eol) {
 		gps_close(&globals->gpsdata);
