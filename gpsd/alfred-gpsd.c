@@ -301,7 +301,7 @@ static void gpsd_read_gpsd(struct globals *globals)
 	size_t cnt;
 	bool eol = false;
 	char buf[4096];
-	const size_t tpv_size = sizeof(*globals->buf) -
+	const size_t tpv_size = sizeof(globals->buf) -
 				sizeof(*globals->push) -
 				sizeof(struct alfred_data) -
 				sizeof(*globals->gpsd_data);
@@ -450,7 +450,7 @@ static int gpsd_server(struct globals *globals)
 	int max_fd, ret;
 	const size_t overhead = sizeof(*globals->push) +
 		sizeof(struct alfred_data);
-	const size_t tpv_size = sizeof(*globals->buf) -
+	const size_t tpv_size = sizeof(globals->buf) -
 				sizeof(*globals->push) -
 				sizeof(struct alfred_data) -
 				sizeof(*globals->gpsd_data);
