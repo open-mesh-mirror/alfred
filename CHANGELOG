@@ -1,3 +1,11 @@
+alfred 2014.3.0:
+
+ * fix various possible memleak, access errors and strncpy issues
+ * handle fcntl return codes
+ * fix altitude verification check in gpsd
+
+ -- Mon, 21 Jul 2014 16:53:01 +0200
+
 alfred 2014.2.0:
 
  * Handle EPERM errors on every sendto
