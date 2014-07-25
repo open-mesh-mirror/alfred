@@ -285,7 +285,7 @@ int alfred_server(struct globals *globals)
 	if (create_hashes(globals))
 		return -1;
 
-	if (unix_sock_open_daemon(globals, ALFRED_SOCK_PATH))
+	if (unix_sock_open_daemon(globals))
 		return -1;
 
 	if (!globals->interface) {

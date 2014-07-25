@@ -169,7 +169,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strncpy(addr.sun_path, ALFRED_SOCK_PATH, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals->unix_path, sizeof(addr.sun_path));
 	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
@@ -818,6 +818,7 @@ static void vis_usage(void)
 	printf("  -i, --interface             specify the batman-adv interface configured on the system (default: bat0)\n");
 	printf("  -s, --server                start up in server mode, which regularly updates vis data from batman-adv\n");
 	printf("  -f, --format <format>       specify the output format for client mode (either \"json\", \"jsondoc\" or \"dot\")\n");
+	printf("  -u, --unix-path <path>      path to unix socket used for alfred server communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
 	printf("  -v, --version               print the version\n");
 	printf("  -h, --help                  this help\n");
 	printf("\n");
@@ -831,6 +832,7 @@ static struct globals *vis_init(int argc, char *argv[])
 		{"server",	no_argument,		NULL,	's'},
 		{"interface",	required_argument,	NULL,	'i'},
 		{"format",	required_argument,	NULL,	'f'},
+		{"unix-path", 	required_argument,	NULL,	'u'},
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
@@ -842,8 +844,9 @@ static struct globals *vis_init(int argc, char *argv[])
 	globals->opmode = OPMODE_CLIENT;
 	globals->interface = "bat0";
 	globals->vis_format = FORMAT_DOT;
+	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 
-	while ((opt = getopt_long(argc, argv, "shf:i:v", long_options,
+	while ((opt = getopt_long(argc, argv, "shf:i:vu:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 's':
@@ -863,6 +866,9 @@ static struct globals *vis_init(int argc, char *argv[])
 			break;
 		case 'i':
 			globals->interface = strdup(optarg);
+			break;
+		case 'u':
+			globals->unix_path = optarg;
 			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);

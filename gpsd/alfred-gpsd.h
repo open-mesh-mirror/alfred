@@ -41,7 +41,7 @@
 #define SOURCE_VERSION				"2014.4.0"
 #endif
 
-#define ALFRED_SOCK_PATH			"/var/run/alfred.sock"
+#define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
 #define PATH_BUFF_LEN				200
 #define GPSD_PACKETTYPE				2
 #define	GPSD_PACKETVERSION			1
@@ -95,6 +95,7 @@ struct globals {
 
 	float lat, lon, alt;
 	int unix_sock;
+	const char *unix_path;
 
 	struct fixsource_t gpsdsource;
 	struct gps_data_t gpsdata;

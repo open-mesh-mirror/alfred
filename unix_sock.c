@@ -35,11 +35,11 @@
 #include "hash.h"
 #include "packet.h"
 
-int unix_sock_open_daemon(struct globals *globals, const char *path)
+int unix_sock_open_daemon(struct globals *globals)
 {
 	struct sockaddr_un addr;
 
-	unlink(path);
+	unlink(globals->unix_path);
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
@@ -50,7 +50,7 @@ int unix_sock_open_daemon(struct globals *globals, const char *path)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals->unix_path, sizeof(addr.sun_path));
 	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (bind(globals->unix_sock, (struct sockaddr *)&addr,
@@ -69,7 +69,7 @@ int unix_sock_open_daemon(struct globals *globals, const char *path)
 	return 0;
 }
 
-int unix_sock_open_client(struct globals *globals, const char *path)
+int unix_sock_open_client(struct globals *globals)
 {
 	struct sockaddr_un addr;
 
@@ -82,7 +82,7 @@ int unix_sock_open_client(struct globals *globals, const char *path)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals->unix_path, sizeof(addr.sun_path));
 	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,

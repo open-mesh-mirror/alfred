@@ -35,7 +35,7 @@
 #define ALFRED_REQUEST_TIMEOUT		10
 #define ALFRED_SERVER_TIMEOUT		60
 #define ALFRED_DATA_TIMEOUT		600
-#define ALFRED_SOCK_PATH		"/var/run/alfred.sock"
+#define ALFRED_SOCK_PATH_DEFAULT	"/var/run/alfred.sock"
 #define NO_FILTER			-1
 
 enum data_source {
@@ -102,6 +102,7 @@ struct globals {
 
 	int netsock;
 	int unix_sock;
+	const char *unix_path;
 
 	struct timespec if_check;
 
@@ -144,8 +145,8 @@ ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 			   void *buf, int length);
 /* unix_sock.c */
 int unix_sock_read(struct globals *globals);
-int unix_sock_open_daemon(struct globals *globals, const char *path);
-int unix_sock_open_client(struct globals *globals, const char *path);
+int unix_sock_open_daemon(struct globals *globals);
+int unix_sock_open_client(struct globals *globals);
 int unix_sock_close(struct globals *globals);
 int unix_sock_req_data_finish(struct globals *globals,
 			      struct transaction_head *head);

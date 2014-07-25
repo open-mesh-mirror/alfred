@@ -30,7 +30,7 @@
 #define SOURCE_VERSION				"2014.4.0"
 #endif
 
-#define ALFRED_SOCK_PATH			"/var/run/alfred.sock"
+#define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
 #define PATH_BUFF_LEN				200
 #define VIS_PACKETTYPE				1
 #define	VIS_PACKETVERSION			1
@@ -105,6 +105,7 @@ struct globals {
 	struct list_head entry_list;
 
 	int unix_sock;
+	const char *unix_path;
 };
 
 

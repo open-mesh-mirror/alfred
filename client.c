@@ -40,7 +40,7 @@ int alfred_client_request_data(struct globals *globals)
 	int ret, len, data_len, i;
 	const size_t buf_data_len = sizeof(buf) - sizeof(*push) - sizeof(*data);
 
-	if (unix_sock_open_client(globals, ALFRED_SOCK_PATH))
+	if (unix_sock_open_client(globals))
 		return -1;
 
 	request = (struct alfred_request_v0 *)buf;
@@ -146,7 +146,7 @@ int alfred_client_set_data(struct globals *globals)
 	struct alfred_data *data;
 	int ret, len;
 
-	if (unix_sock_open_client(globals, ALFRED_SOCK_PATH))
+	if (unix_sock_open_client(globals))
 		return -1;
 
 	push = (struct alfred_push_data_v0 *)buf;
@@ -187,7 +187,7 @@ int alfred_client_modeswitch(struct globals *globals)
 	struct alfred_modeswitch_v0 *modeswitch;
 	int ret, len;
 
-	if (unix_sock_open_client(globals, ALFRED_SOCK_PATH))
+	if (unix_sock_open_client(globals))
 		return -1;
 
 	modeswitch = (struct alfred_modeswitch_v0 *)buf;

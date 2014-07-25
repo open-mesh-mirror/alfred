@@ -36,7 +36,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_LOCAL;
-	strncpy(addr.sun_path, ALFRED_SOCK_PATH, sizeof(addr.sun_path));
+	strncpy(addr.sun_path, globals->unix_path, sizeof(addr.sun_path));
 	addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
@@ -399,6 +399,7 @@ static struct globals *gpsd_init(int argc, char *argv[])
 		{"server",	no_argument,		NULL,	's'},
 		{"location",    required_argument,	NULL,	'l'},
 		{"gpsd",	required_argument,	NULL,	'g'},
+		{"unix-path", 	required_argument,	NULL,	'u'},
 		{"help",	no_argument,		NULL,	'h'},
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
@@ -410,8 +411,9 @@ static struct globals *gpsd_init(int argc, char *argv[])
 	globals->opmode = OPMODE_CLIENT;
 	globals->source = SOURCE_GPSD;
 	globals->gpsd_format = FORMAT_JSON;
+	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 
-	while ((opt = getopt_long(argc, argv, "shl:g:v", long_options,
+	while ((opt = getopt_long(argc, argv, "shl:g:vu:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 's':
@@ -424,6 +426,9 @@ static struct globals *gpsd_init(int argc, char *argv[])
 		case 'g':
 			gpsd_source_spec(optarg, &globals->gpsdsource);
 			have_source = true;
+			break;
+		case 'u':
+			globals->unix_path = optarg;
 			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);

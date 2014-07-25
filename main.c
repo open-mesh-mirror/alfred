@@ -49,6 +49,7 @@ static void alfred_usage(void)
 	printf("                              accepts data from slaves and synces it with\n");
 	printf("                              other masters\n");
 	printf("\n");
+	printf("  -u, --unix-path [path]      path to unix socket used for client-server communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
 	printf("  -v, --version               print the version\n");
 	printf("  -h, --help                  this help\n");
 	printf("\n");
@@ -66,6 +67,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"help",	no_argument,		NULL,	'h'},
 		{"req-version", required_argument,	NULL,	'V'},
 		{"modeswitch",  required_argument,	NULL,	'M'},
+		{"unix-path", 	required_argument,	NULL,	'u'},
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
 	};
@@ -79,10 +81,11 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->best_server = NULL;
 	globals->clientmode_version = 0;
 	globals->mesh_iface = "bat0";
+	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:u:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -131,6 +134,9 @@ static struct globals *alfred_init(int argc, char *argv[])
 				return NULL;
 			}
 			globals->clientmode = CLIENT_MODESWITCH;
+			break;
+		case 'u':
+			globals->unix_path = optarg;
 			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);
