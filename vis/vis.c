@@ -108,7 +108,7 @@ static int get_if_mac(char *ifname, uint8_t *mac)
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		fprintf(stderr, "can't get interface: %s\n", strerror(errno));
+		perror("can't get interface");
 		return -1;
 	}
 
@@ -117,7 +117,7 @@ static int get_if_mac(char *ifname, uint8_t *mac)
 	close(sock);
 
 	if (ret == -1) {
-		fprintf(stderr, "can't get MAC address: %s\n", strerror(errno));
+		perror("can't get MAC address");
 		return -1;
 	}
 
@@ -162,8 +162,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
-		fprintf(stderr, "can't create unix socket: %s\n",
-			strerror(errno));
+		perror("can't create unix socket");
 		return -1;
 	}
 
@@ -174,8 +173,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
-		fprintf(stderr, "can't connect to unix socket: %s\n",
-			strerror(errno));
+		perror("can't connect to unix socket");
 		return -1;
 	}
 

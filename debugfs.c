@@ -89,9 +89,7 @@ static const char *debugfs_find_mountpoint(void)
 	/* give up and parse /proc/mounts */
 	fp = fopen("/proc/mounts", "r");
 	if (fp == NULL) {
-		fprintf(stderr,
-			"Error - can't open /proc/mounts for read: %s\n",
-			strerror(errno));
+		perror("Error - can't open /proc/mounts for read");
 		return NULL;
 	}
 

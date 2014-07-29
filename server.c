@@ -236,7 +236,7 @@ static void check_if_socket(struct globals *globals)
 
 	sock = socket(PF_INET6, SOCK_DGRAM, 0);
 	if (sock < 0) {
-		fprintf(stderr, "can't open socket: %s\n", strerror(errno));
+		perror("can't open socket");
 		return;
 	}
 
@@ -244,8 +244,7 @@ static void check_if_socket(struct globals *globals)
 	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
-		fprintf(stderr, "can't get interface: %s, closing netsock\n",
-			strerror(errno));
+		perror("can't get interface, closing netsock");
 		goto close;
 	}
 
@@ -257,8 +256,7 @@ static void check_if_socket(struct globals *globals)
 	}
 
 	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
-		fprintf(stderr, "can't get MAC address: %s, closing netsock\n",
-			strerror(errno));
+		perror("can't get MAC address, closing netsock");
 		goto close;
 	}
 
@@ -330,8 +328,7 @@ int alfred_server(struct globals *globals)
 		ret = pselect(maxsock + 1, &fds, NULL, &errfds, &tv, NULL);
 
 		if (ret == -1) {
-			fprintf(stderr, "main loop select failed ...: %s\n",
-				strerror(errno));
+			perror("main loop select failed ...");
 		} else if (ret) {
 			if (globals->netsock >= 0 &&
 			    FD_ISSET(globals->netsock, &errfds)) {

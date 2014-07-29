@@ -29,8 +29,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
-		fprintf(stderr, "can't create unix socket: %s\n",
-			strerror(errno));
+		perror("can't create unix socket");
 		return -1;
 	}
 
@@ -41,8 +40,7 @@ static int alfred_open_sock(struct globals *globals)
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
-		fprintf(stderr, "can't connect to unix socket: %s\n",
-			strerror(errno));
+		perror("can't connect to unix socket");
 		return -1;
 	}
 
@@ -514,8 +512,7 @@ static int gpsd_server(struct globals *globals)
 			errno = 0;
 			ret = select(max_fd, &fds, NULL, NULL, &tv);
 			if (ret == -1 && errno != EINTR)
-				printf("select error %s(%d)\n",
-				       strerror(errno), errno);
+				perror("select error");
 
 			if (ret == 1)
 				gpsd_read_gpsd(globals);

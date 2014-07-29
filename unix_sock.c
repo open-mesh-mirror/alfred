@@ -43,8 +43,7 @@ int unix_sock_open_daemon(struct globals *globals)
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
-		fprintf(stderr, "can't create unix socket: %s\n",
-			strerror(errno));
+		perror("can't create unix socket");
 		return -1;
 	}
 
@@ -55,14 +54,12 @@ int unix_sock_open_daemon(struct globals *globals)
 
 	if (bind(globals->unix_sock, (struct sockaddr *)&addr,
 		 sizeof(addr)) < 0) {
-		fprintf(stderr, "can't bind unix socket: %s\n",
-			strerror(errno));
+		perror("can't bind unix socket");
 		return -1;
 	}
 
 	if (listen(globals->unix_sock, 10) < 0) {
-		fprintf(stderr, "can't listen on unix socket: %s\n",
-			strerror(errno));
+		perror("can't listen on unix socket");
 		return -1;
 	}
 
@@ -75,8 +72,7 @@ int unix_sock_open_client(struct globals *globals)
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
-		fprintf(stderr, "can't create unix socket: %s\n",
-			strerror(errno));
+		perror("can't create unix socket");
 		return -1;
 	}
 
@@ -87,8 +83,7 @@ int unix_sock_open_client(struct globals *globals)
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
-		fprintf(stderr, "can't connect to unix socket: %s\n",
-			strerror(errno));
+		perror("can't connect to unix socket");
 		return -1;
 	}
 
@@ -315,16 +310,14 @@ int unix_sock_read(struct globals *globals)
 	client_sock = accept(globals->unix_sock, (struct sockaddr *)&sun_addr,
 			     &sun_size);
 	if (client_sock < 0) {
-		fprintf(stderr, "can't accept unix connection: %s\n",
-			strerror(errno));
+		perror("can't accept unix connection");
 		return -1;
 	}
 
 	/* we assume that we can instantly read here. */
 	length = read(client_sock, buf, sizeof(buf));
 	if (length <= 0) {
-		fprintf(stderr, "read from unix socket failed: %s\n",
-			strerror(errno));
+		perror("read from unix socket failed");
 		goto err;
 	}
 

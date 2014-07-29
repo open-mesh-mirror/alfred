@@ -54,7 +54,7 @@ int netsock_open(struct globals *globals)
 
 	sock = socket(PF_INET6, SOCK_DGRAM, 0);
 	if (sock  < 0) {
-		fprintf(stderr, "can't open socket: %s\n", strerror(errno));
+		perror("can't open socket");
 		return -1;
 	}
 
@@ -62,7 +62,7 @@ int netsock_open(struct globals *globals)
 	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
-		fprintf(stderr, "can't get interface: %s\n", strerror(errno));
+		perror("can't get interface");
 		goto err;
 	}
 
@@ -75,7 +75,7 @@ int netsock_open(struct globals *globals)
 	sin6.sin6_scope_id = ifr.ifr_ifindex;
 
 	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
-		fprintf(stderr, "can't get MAC address: %s\n", strerror(errno));
+		perror("can't get MAC address");
 		goto err;
 	}
 
@@ -83,19 +83,19 @@ int netsock_open(struct globals *globals)
 	mac_to_ipv6(&globals->hwaddr, &globals->address);
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
-		fprintf(stderr, "can't bind\n");
+		perror("can't bind");
 		goto err;
 	}
 
 	ret = fcntl(sock, F_GETFL, 0);
 	if (ret < 0) {
-		fprintf(stderr, "failed to get file status flags\n");
+		perror("failed to get file status flags");
 		goto err;
 	}
 
 	ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
 	if (ret < 0) {
-		fprintf(stderr, "failed to set file status flags\n");
+		perror("failed to set file status flags");
 		goto err;
 	}
 

@@ -385,8 +385,7 @@ int recv_alfred_packet(struct globals *globals)
 	length = recvfrom(globals->netsock, buf, sizeof(buf), 0,
 			  (struct sockaddr *)&source, &sourcelen);
 	if (length <= 0) {
-		fprintf(stderr, "read from network socket failed: %s\n",
-			strerror(errno));
+		perror("read from network socket failed");
 		return -1;
 	}
 
