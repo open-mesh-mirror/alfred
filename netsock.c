@@ -52,7 +52,7 @@ int netsock_open(struct globals *globals)
 
 	globals->netsock = -1;
 
-	sock = socket(PF_INET6, SOCK_DGRAM, 0);
+	sock = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock  < 0) {
 		perror("can't open socket");
 		return -1;
@@ -81,6 +81,12 @@ int netsock_open(struct globals *globals)
 
 	memcpy(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
 	mac_to_ipv6(&globals->hwaddr, &globals->address);
+
+	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE,
+		       globals->interface, strlen(globals->interface) + 1)) {
+		perror("can't bind to device");
+		goto err;
+	}
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
 		perror("can't bind");
