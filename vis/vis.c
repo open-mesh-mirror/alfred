@@ -258,7 +258,7 @@ static int register_interfaces(struct globals *globals)
 
 	path_buff = malloc(PATH_BUFF_LEN);
 	if (!path_buff) {
-		fprintf(stderr, "Error - could not allocate path buffer: out of memory ?\n");
+		perror("Error - could not allocate path buffer");
 		goto err;
 	}
 
@@ -880,7 +880,7 @@ static struct globals *vis_init(int argc, char *argv[])
 	}
 
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		fprintf(stderr, "could not register SIGPIPE handler\n");
+		perror("could not register SIGPIPE handler");
 	return globals;
 }
 

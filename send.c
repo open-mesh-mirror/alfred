@@ -170,7 +170,7 @@ ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 		     (struct sockaddr *)&dest_addr,
 		     sizeof(struct sockaddr_in6));
 	if (ret == -EPERM) {
-		fprintf(stderr, "Error during sent\n");
+		perror("Error during sent");
 		netsock_close(globals->netsock);
 		globals->netsock = -1;
 	}

@@ -150,7 +150,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	}
 
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		fprintf(stderr, "could not register SIGPIPE handler\n");
+		perror("could not register SIGPIPE handler");
 	return globals;
 }
 

@@ -443,7 +443,7 @@ static struct globals *gpsd_init(int argc, char *argv[])
 		gpsd_source_spec(NULL, &globals->gpsdsource);
 
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		fprintf(stderr, "could not register SIGPIPE handler\n");
+		perror("could not register SIGPIPE handler");
 	return globals;
 }
 
