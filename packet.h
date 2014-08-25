@@ -20,6 +20,8 @@
 #ifndef _ALFRED_PACKET_H
 #define _ALFRED_PACKET_H
 
+#include <net/if.h>	/* IFNAMSIZ */
+
 #define __packed __attribute__ ((packed))
 
 /* basic blocks */
@@ -67,6 +69,7 @@ struct alfred_transaction_mgmt {
  * @ALFRED_STATUS_TXEND: Transaction was finished by sender
  * @ALFRED_STATUS_ERROR: Error was detected during the transaction
  * @ALFRED_MODESWITCH: Switch between different operation modes
+ * @ALFRED_CHANGE_INTERFACE: Change the listening interface
  */
 enum alfred_packet_type {
 	ALFRED_PUSH_DATA = 0,
@@ -75,6 +78,7 @@ enum alfred_packet_type {
 	ALFRED_STATUS_TXEND = 3,
 	ALFRED_STATUS_ERROR = 4,
 	ALFRED_MODESWITCH = 5,
+	ALFRED_CHANGE_INTERFACE = 6,
 };
 
 /* packets */
@@ -141,6 +145,19 @@ struct alfred_modeswitch_v0 {
 	struct alfred_tlv header;
 	uint8_t mode;
 } __packed;
+
+/**
+ * struct alfred_change_interface_v0 - Request to change the interface
+ * @header: TLV header describing the complete packet
+ * @iface: interface name to be changed to
+ *
+ * Sent to the daemon by client
+ */
+struct alfred_change_interface_v0 {
+	struct alfred_tlv header;
+	char iface[IFNAMSIZ];
+} __packed;
+
 
 /**
  * struct alfred_status_v0 - Status info of a transaction

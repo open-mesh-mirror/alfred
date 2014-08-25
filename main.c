@@ -33,25 +33,29 @@ static void alfred_usage(void)
 {
 	printf("Usage: alfred [options]\n");
 	printf("client mode options:\n");
-	printf("  -s, --set-data [data type]  sets new data to distribute from stdin\n");
-	printf("                              for the supplied data type (0-255)\n");
-	printf("  -r, --request [data type]   collect data from the network and prints\n");
-	printf("                              it on the network\n");
-	printf("  -V, --req-version           specify the data version set for -s\n");
-	printf("  -M, --modeswitch master     switch daemon to mode master\n");
-	printf("                   slave      switch daemon to mode slave\n");
+	printf("  -s, --set-data [data type]          sets new data to distribute from stdin\n");
+	printf("                                      for the supplied data type (0-255)\n");
+	printf("  -r, --request [data type]           collect data from the network and prints\n");
+	printf("                                      it on the network\n");
+	printf("  -V, --req-version                   specify the data version set for -s\n");
+	printf("  -M, --modeswitch master             switch daemon to mode master\n");
+	printf("                   slave              switch daemon to mode slave\n");
+	printf("  -I, --change-interface [interface]  change to the specified interface\n");
 	printf("\n");
 	printf("server mode options:\n");
-	printf("  -i, --interface             specify the interface to listen on\n");
-	printf("  -b                          specify the batman-adv interface configured on the system (default: bat0)\n");
-	printf("                              use 'none' to disable the batman-adv based best server selection\n");
-	printf("  -m, --master                start up the daemon in master mode, which\n");
-	printf("                              accepts data from slaves and synces it with\n");
-	printf("                              other masters\n");
+	printf("  -i, --interface                     specify the interface to listen on\n");
+	printf("  -b                                  specify the batman-adv interface\n");
+	printf("                                      configured on the system (default: bat0)\n");
+	printf("                                      use 'none' to disable the batman-adv\n");
+	printf("                                      based best server selection\n");
+	printf("  -m, --master                        start up the daemon in master mode, which\n");
+	printf("                                      accepts data from slaves and synces it with\n");
+	printf("                                      other masters\n");
 	printf("\n");
-	printf("  -u, --unix-path [path]      path to unix socket used for client-server communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
-	printf("  -v, --version               print the version\n");
-	printf("  -h, --help                  this help\n");
+	printf("  -u, --unix-path [path]              path to unix socket used for client-server\n");
+	printf("                                      communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
+	printf("  -v, --version                       print the version\n");
+	printf("  -h, --help                          this help\n");
 	printf("\n");
 }
 
@@ -60,16 +64,17 @@ static struct globals *alfred_init(int argc, char *argv[])
 	int opt, opt_ind, i;
 	struct globals *globals;
 	struct option long_options[] = {
-		{"set-data",	required_argument,	NULL,	's'},
-		{"request",	required_argument,	NULL,	'r'},
-		{"interface",	required_argument,	NULL,	'i'},
-		{"master",	no_argument,		NULL,	'm'},
-		{"help",	no_argument,		NULL,	'h'},
-		{"req-version", required_argument,	NULL,	'V'},
-		{"modeswitch",  required_argument,	NULL,	'M'},
-		{"unix-path", 	required_argument,	NULL,	'u'},
-		{"version",	no_argument,		NULL,	'v'},
-		{NULL,		0,			NULL,	0},
+		{"set-data",		required_argument,	NULL,	's'},
+		{"request",		required_argument,	NULL,	'r'},
+		{"interface",		required_argument,	NULL,	'i'},
+		{"master",		no_argument,		NULL,	'm'},
+		{"help",		no_argument,		NULL,	'h'},
+		{"req-version", 	required_argument,	NULL,	'V'},
+		{"modeswitch",  	required_argument,	NULL,	'M'},
+		{"change-interface",	required_argument,	NULL,	'I'},
+		{"unix-path",		required_argument,	NULL,	'u'},
+		{"version",		no_argument,		NULL,	'v'},
+		{NULL,			0,			NULL,	0},
 	};
 
 	globals = &alfred_globals;
@@ -85,7 +90,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:u:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -135,6 +140,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 			}
 			globals->clientmode = CLIENT_MODESWITCH;
 			break;
+		case 'I':
+			globals->clientmode = CLIENT_CHANGE_INTERFACE;
+			globals->interface = strdup(optarg);
+			break;
 		case 'u':
 			globals->unix_path = optarg;
 			break;
@@ -175,6 +184,9 @@ int main(int argc, char *argv[])
 		break;
 	case CLIENT_MODESWITCH:
 		return alfred_client_modeswitch(globals);
+		break;
+	case CLIENT_CHANGE_INTERFACE:
+		return alfred_client_change_interface(globals);
 		break;
 	}
 

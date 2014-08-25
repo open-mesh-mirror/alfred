@@ -298,6 +298,38 @@ err:
 	return ret;
 }
 
+static int
+unix_sock_change_iface(struct globals *globals,
+		       struct alfred_change_interface_v0 *change_iface,
+		       int client_sock)
+{
+	int len, ret = -1;
+	char *iface;
+
+	len = ntohs(change_iface->header.length);
+
+	if (len < (int)(sizeof(*change_iface) - sizeof(change_iface->header)))
+		goto err;
+
+	iface = malloc(IFNAMSIZ + 1);
+	if (!iface)
+		goto err;
+
+	memcpy(iface, change_iface->iface, IFNAMSIZ);
+	iface[IFNAMSIZ] = 0;
+
+	netsock_close(globals->netsock);
+
+	free(globals->interface);
+	globals->interface = iface;
+	netsock_open(globals);
+
+	ret = 0;
+err:
+	close(client_sock);
+	return ret;
+}
+
 int unix_sock_read(struct globals *globals)
 {
 	int client_sock;
@@ -350,6 +382,12 @@ int unix_sock_read(struct globals *globals)
 				       (struct alfred_modeswitch_v0 *)packet,
 					client_sock);
 		break;
+	case ALFRED_CHANGE_INTERFACE:
+		ret = unix_sock_change_iface(globals,
+					     (struct alfred_change_interface_v0 *)packet,
+					     client_sock);
+		break;
+
 	default:
 		/* unknown packet type */
 		ret = -1;

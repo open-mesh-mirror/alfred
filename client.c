@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <sys/ioctl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -216,5 +217,58 @@ int alfred_client_modeswitch(struct globals *globals)
 			__func__, ret, len, strerror(errno));
 
 	unix_sock_close(globals);
+	return 0;
+}
+
+int alfred_client_change_interface(struct globals *globals)
+{
+	unsigned char buf[MAX_PAYLOAD];
+	struct alfred_change_interface_v0 *change_interface;
+	struct ifreq ifr;
+	int ret, len;
+	int sock = -1;
+
+	if (unix_sock_open_client(globals))
+		return -1;
+
+	if (strlen(globals->interface) > IFNAMSIZ) {
+		fprintf(stderr, "%s: interface name too long, not changing\n",
+			__func__);
+		return 0;
+	}
+
+	sock = socket(PF_INET6, SOCK_DGRAM, 0);
+	if (sock < 0) {
+		perror("can't open socket");
+		return -1;
+	}
+
+	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
+		fprintf(stderr, "%s: can't find interface, not changing\n",
+			__func__);
+		close(sock);
+		return -1;
+	}
+
+	close(sock);
+
+	change_interface = (struct alfred_change_interface_v0 *)buf;
+	len = sizeof(*change_interface);
+
+	change_interface->header.type = ALFRED_CHANGE_INTERFACE;
+	change_interface->header.version = ALFRED_VERSION;
+	change_interface->header.length = htons(len - sizeof(change_interface->header));
+	memcpy(change_interface->iface, globals->interface,
+	       sizeof(change_interface->iface));
+
+	ret = write(globals->unix_sock, buf, len);
+	if (ret != len)
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+
+	unix_sock_close(globals);
+
 	return 0;
 }
