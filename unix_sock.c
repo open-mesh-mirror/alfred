@@ -31,6 +31,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 #include "alfred.h"
 #include "hash.h"
 #include "packet.h"
@@ -98,6 +99,11 @@ static int unix_sock_add_data(struct globals *globals,
 	struct alfred_data *data;
 	struct dataset *dataset;
 	int len, data_len, ret = -1;
+	struct interface *interface;
+
+	interface = netsock_first_interface(globals);
+	if (!interface)
+		goto err;
 
 	len = ntohs(push->header.length);
 
@@ -112,7 +118,7 @@ static int unix_sock_add_data(struct globals *globals,
 
 	data = push->data;
 	data_len = ntohs(data->header.length);
-	memcpy(data->source, &globals->hwaddr, sizeof(globals->hwaddr));
+	memcpy(data->source, &interface->hwaddr, sizeof(interface->hwaddr));
 
 	if ((int)(data_len + sizeof(*data)) > len)
 		goto err;
@@ -204,6 +210,7 @@ static int unix_sock_req_data(struct globals *globals,
 	int len;
 	uint16_t id;
 	struct transaction_head *head = NULL;
+	struct interface *interface;
 
 	len = ntohs(request->header.length);
 
@@ -212,8 +219,10 @@ static int unix_sock_req_data(struct globals *globals,
 
 	id = ntohs(request->tx_id);
 
+	interface = netsock_first_interface(globals);
+
 	/* no server to send the request to, only give back what we have now. */
-	if (!globals->best_server)
+	if (!globals->best_server || !interface)
 		return unix_sock_req_data_reply(globals, client_sock, id,
 						request->requested_type);
 
@@ -229,7 +238,7 @@ static int unix_sock_req_data(struct globals *globals,
 	head->client_socket = client_sock;
 	head->requested_type = request->requested_type;
 
-	send_alfred_packet(globals, &globals->best_server->address,
+	send_alfred_packet(interface, &globals->best_server->address,
 			   request, sizeof(*request));
 
 	return 0;
@@ -283,6 +292,9 @@ static int unix_sock_modesw(struct globals *globals,
 
 	switch (modeswitch->mode) {
 	case ALFRED_MODESWITCH_SLAVE:
+		if (!list_is_singular(&globals->interfaces))
+			goto err;
+
 		globals->opmode = OPMODE_SLAVE;
 		break;
 	case ALFRED_MODESWITCH_MASTER:
@@ -304,25 +316,21 @@ unix_sock_change_iface(struct globals *globals,
 		       int client_sock)
 {
 	int len, ret = -1;
-	char *iface;
 
 	len = ntohs(change_iface->header.length);
 
 	if (len < (int)(sizeof(*change_iface) - sizeof(change_iface->header)))
 		goto err;
 
-	iface = malloc(IFNAMSIZ + 1);
-	if (!iface)
-		goto err;
+	if (globals->opmode == OPMODE_SLAVE) {
+		if (strstr(change_iface->ifaces, ",") != NULL) {
+			ret = -EINVAL;
+			fprintf(stderr, "Tried to set multiple interfaces in slave mode\n");
+			goto err;
+		}
+	}
 
-	memcpy(iface, change_iface->iface, IFNAMSIZ);
-	iface[IFNAMSIZ] = 0;
-
-	netsock_close(globals->netsock);
-
-	free(globals->interface);
-	globals->interface = iface;
-	netsock_open(globals);
+	netsock_set_interfaces(globals, change_iface->ifaces);
 
 	ret = 0;
 err:

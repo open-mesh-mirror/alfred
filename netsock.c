@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <net/ethernet.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -29,28 +30,104 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <sys/select.h>
 #include "alfred.h"
 #include "batadv_query.h"
 #include "packet.h"
+#include "list.h"
 
 const struct in6_addr in6addr_localmcast = {{{ 0xff, 0x02, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x01 } } };
 
-int netsock_close(int sock)
+void netsock_close_all(struct globals *globals)
 {
-	return close(sock);
+	struct interface *interface, *is;
+
+	list_for_each_entry_safe(interface, is, &globals->interfaces, list) {
+		if (interface->netsock >= 0)
+			close(interface->netsock);
+		list_del(&interface->list);
+		free(interface->interface);
+		free(interface);
+	}
 }
 
-int netsock_open(struct globals *globals)
+struct interface *netsock_first_interface(struct globals *globals)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (interface->netsock >= 0)
+			return interface;
+	}
+
+	return NULL;
+}
+
+static struct interface *netsock_find_interface(struct globals *globals,
+						const char *name)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (strcmp(name, interface->interface) == 0)
+			return interface;
+	}
+
+	return NULL;
+}
+
+int netsock_set_interfaces(struct globals *globals, char *interfaces)
+{
+	char *input, *saveptr, *token;
+	struct interface *interface;
+
+	netsock_close_all(globals);
+
+	input = interfaces;
+	while ((token = strtok_r(input, ",", &saveptr))) {
+		input = NULL;
+
+		interface = netsock_find_interface(globals, token);
+		if (interface)
+			continue;
+
+		interface = malloc(sizeof(*interface));
+		if (!interface) {
+			netsock_close_all(globals);
+			return -ENOMEM;
+		}
+
+		memset(&interface->hwaddr, 0, sizeof(interface->hwaddr));
+		memset(&interface->address, 0, sizeof(interface->address));
+		interface->scope_id = 0;
+		interface->interface = NULL;
+		interface->netsock = -1;
+
+		interface->interface = strdup(token);
+		if (!interface->interface) {
+			free(interface);
+			netsock_close_all(globals);
+			return -ENOMEM;
+		}
+
+		list_add(&interface->list, &globals->interfaces);
+	}
+
+	return 0;
+}
+
+static int netsock_open(struct interface *interface)
 {
 	int sock;
 	struct sockaddr_in6 sin6;
 	struct ifreq ifr;
 	int ret;
 
-	globals->netsock = -1;
+	interface->netsock = -1;
 
 	sock = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock  < 0) {
@@ -59,14 +136,14 @@ int netsock_open(struct globals *globals)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	strncpy(ifr.ifr_name, interface->interface, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
 		perror("can't get interface");
 		goto err;
 	}
 
-	globals->scope_id = ifr.ifr_ifindex;
+	interface->scope_id = ifr.ifr_ifindex;
 
 	memset(&sin6, 0, sizeof(sin6));
 	sin6.sin6_port = htons(ALFRED_PORT);
@@ -79,11 +156,11 @@ int netsock_open(struct globals *globals)
 		goto err;
 	}
 
-	memcpy(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
-	mac_to_ipv6(&globals->hwaddr, &globals->address);
+	memcpy(&interface->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
+	mac_to_ipv6(&interface->hwaddr, &interface->address);
 
-	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE,
-		       globals->interface, strlen(globals->interface) + 1)) {
+	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
+		       strlen(interface->interface) + 1)) {
 		perror("can't bind to device");
 		goto err;
 	}
@@ -105,10 +182,94 @@ int netsock_open(struct globals *globals)
 		goto err;
 	}
 
-	globals->netsock = sock;
+	interface->netsock = sock;
 
 	return 0;
 err:
 	close(sock);
 	return -1;
+}
+
+int netsock_open_all(struct globals *globals)
+{
+	int num_socks = 0;
+	int ret;
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		ret = netsock_open(interface);
+		if (ret >= 0)
+			num_socks++;
+	}
+
+	return num_socks;
+}
+
+void netsock_reopen(struct globals *globals)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (interface->netsock < 0)
+			netsock_open(interface);
+	}
+}
+
+int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (interface->netsock >= 0) {
+			FD_SET(interface->netsock, fds);
+			if (maxsock < interface->netsock)
+				maxsock = interface->netsock;
+		}
+	}
+
+	return maxsock;
+}
+
+void netsock_check_error(struct globals *globals, fd_set *errfds)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (interface->netsock >= 0 &&
+		    FD_ISSET(interface->netsock, errfds)) {
+			fprintf(stderr, "Error on netsock detected\n");
+			close(interface->netsock);
+			interface->netsock = -1;
+		}
+	}
+}
+
+int netsock_receive_packet(struct globals *globals, fd_set *fds)
+{
+	struct interface *interface;
+	int recvs = 0;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (interface->netsock >= 0 &&
+		    FD_ISSET(interface->netsock, fds)) {
+			recv_alfred_packet(globals, interface);
+			recvs++;
+		}
+	}
+
+	return recvs;
+}
+
+int netsock_own_address(const struct globals *globals,
+			const struct in6_addr *address)
+{
+	struct interface *interface;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		if (0 == memcmp(address, &interface->address,
+				sizeof(*address)))
+			return 1;
+	}
+
+	return 0;
 }

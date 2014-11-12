@@ -287,6 +287,7 @@ process_alfred_announce_master(struct globals *globals,
 
 
 static int process_alfred_request(struct globals *globals,
+				  struct interface *interface,
 				  struct in6_addr *source,
 				  struct alfred_request_v0 *request)
 {
@@ -300,8 +301,8 @@ static int process_alfred_request(struct globals *globals,
 	if (len != (sizeof(*request) - sizeof(request->header)))
 		return -1;
 
-	push_data(globals, source, SOURCE_SYNCED, request->requested_type,
-		  request->tx_id);
+	push_data(globals, interface, source, SOURCE_SYNCED,
+		  request->requested_type, request->tx_id);
 
 	return 0;
 }
@@ -370,7 +371,7 @@ static int process_alfred_status_txend(struct globals *globals,
 }
 
 
-int recv_alfred_packet(struct globals *globals)
+int recv_alfred_packet(struct globals *globals, struct interface *interface)
 {
 	uint8_t buf[MAX_PAYLOAD];
 	ssize_t length;
@@ -378,11 +379,11 @@ int recv_alfred_packet(struct globals *globals)
 	struct sockaddr_in6 source;
 	socklen_t sourcelen;
 
-	if (globals->netsock < 0)
+	if (interface->netsock < 0)
 		return -1;
 
 	sourcelen = sizeof(source);
-	length = recvfrom(globals->netsock, buf, sizeof(buf), 0,
+	length = recvfrom(interface->netsock, buf, sizeof(buf), 0,
 			  (struct sockaddr *)&source, &sourcelen);
 	if (length <= 0) {
 		perror("read from network socket failed");
@@ -396,8 +397,7 @@ int recv_alfred_packet(struct globals *globals)
 		return -1;
 
 	/* drop packets from ourselves */
-	if (0 == memcmp(&source.sin6_addr, &globals->address,
-			sizeof(source.sin6_addr)))
+	if (netsock_own_address(globals, &source.sin6_addr))
 		return -1;
 
 	/* drop truncated packets */
@@ -418,7 +418,7 @@ int recv_alfred_packet(struct globals *globals)
 					       (struct alfred_announce_master_v0 *)packet);
 		break;
 	case ALFRED_REQUEST:
-		process_alfred_request(globals, &source.sin6_addr,
+		process_alfred_request(globals, interface, &source.sin6_addr,
 				       (struct alfred_request_v0 *)packet);
 		break;
 	case ALFRED_STATUS_TXEND:

@@ -26,6 +26,7 @@
 #include <string.h>
 #include "alfred.h"
 #include "packet.h"
+#include "list.h"
 
 static struct globals alfred_globals;
 
@@ -40,10 +41,10 @@ static void alfred_usage(void)
 	printf("  -V, --req-version                   specify the data version set for -s\n");
 	printf("  -M, --modeswitch master             switch daemon to mode master\n");
 	printf("                   slave              switch daemon to mode slave\n");
-	printf("  -I, --change-interface [interface]  change to the specified interface\n");
+	printf("  -I, --change-interface [interface]  change to the specified interface(s)\n");
 	printf("\n");
 	printf("server mode options:\n");
-	printf("  -i, --interface                     specify the interface to listen on\n");
+	printf("  -i, --interface                     specify the interface (or comma separated list of interfaes) to listen on\n");
 	printf("  -b                                  specify the batman-adv interface\n");
 	printf("                                      configured on the system (default: bat0)\n");
 	printf("                                      use 'none' to disable the batman-adv\n");
@@ -80,9 +81,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals = &alfred_globals;
 	memset(globals, 0, sizeof(*globals));
 
+	INIT_LIST_HEAD(&globals->interfaces);
+	globals->change_interface = NULL;
 	globals->opmode = OPMODE_SLAVE;
 	globals->clientmode = CLIENT_NONE;
-	globals->interface = NULL;
 	globals->best_server = NULL;
 	globals->clientmode_version = 0;
 	globals->mesh_iface = "bat0";
@@ -116,7 +118,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->opmode = OPMODE_MASTER;
 			break;
 		case 'i':
-			globals->interface = strdup(optarg);
+			netsock_set_interfaces(globals, optarg);
 			break;
 		case 'b':
 			globals->mesh_iface = strdup(optarg);
@@ -142,7 +144,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case 'I':
 			globals->clientmode = CLIENT_CHANGE_INTERFACE;
-			globals->interface = strdup(optarg);
+			globals->change_interface = strdup(optarg);
 			break;
 		case 'u':
 			globals->unix_path = optarg;

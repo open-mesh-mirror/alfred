@@ -149,13 +149,13 @@ struct alfred_modeswitch_v0 {
 /**
  * struct alfred_change_interface_v0 - Request to change the interface
  * @header: TLV header describing the complete packet
- * @iface: interface name to be changed to
+ * @ifaces: interface list (comma separated) to be changed to
  *
  * Sent to the daemon by client
  */
 struct alfred_change_interface_v0 {
 	struct alfred_tlv header;
-	char iface[IFNAMSIZ];
+	char ifaces[IFNAMSIZ * 16];
 } __packed;
 
 

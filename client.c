@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <net/if.h>
+#include <stddef.h>
+#include <sys/socket.h>
 #include "alfred.h"
 #include "packet.h"
 
@@ -220,21 +223,15 @@ int alfred_client_modeswitch(struct globals *globals)
 	return 0;
 }
 
-int alfred_client_change_interface(struct globals *globals)
+static int check_interface(const char *iface)
 {
-	unsigned char buf[MAX_PAYLOAD];
-	struct alfred_change_interface_v0 *change_interface;
-	struct ifreq ifr;
-	int ret, len;
 	int sock = -1;
+	struct ifreq ifr;
 
-	if (unix_sock_open_client(globals))
-		return -1;
-
-	if (strlen(globals->interface) > IFNAMSIZ) {
-		fprintf(stderr, "%s: interface name too long, not changing\n",
+	if (strlen(iface) > IFNAMSIZ) {
+		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
-		return 0;
+		return -1;
 	}
 
 	sock = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -243,7 +240,7 @@ int alfred_client_change_interface(struct globals *globals)
 		return -1;
 	}
 
-	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	strncpy(ifr.ifr_name, iface, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
 		fprintf(stderr, "%s: can't find interface, not changing\n",
@@ -254,14 +251,47 @@ int alfred_client_change_interface(struct globals *globals)
 
 	close(sock);
 
+	return 0;
+}
+
+int alfred_client_change_interface(struct globals *globals)
+{
+	unsigned char buf[MAX_PAYLOAD];
+	struct alfred_change_interface_v0 *change_interface;
+	int ret, len;
+	char *input, *token, *saveptr;
+
+	if (unix_sock_open_client(globals))
+		return -1;
+
+	if (strlen(globals->change_interface) > sizeof(change_interface->ifaces)) {
+		fprintf(stderr, "%s: interface name list too long, not changing\n",
+			__func__);
+		return 0;
+	}
+
 	change_interface = (struct alfred_change_interface_v0 *)buf;
 	len = sizeof(*change_interface);
 
 	change_interface->header.type = ALFRED_CHANGE_INTERFACE;
 	change_interface->header.version = ALFRED_VERSION;
 	change_interface->header.length = htons(len - sizeof(change_interface->header));
-	memcpy(change_interface->iface, globals->interface,
-	       sizeof(change_interface->iface));
+	strncpy(change_interface->ifaces, globals->change_interface,
+		sizeof(change_interface->ifaces));
+	change_interface->ifaces[sizeof(change_interface->ifaces) - 1] = '\0';
+
+	/* test it before sending
+	 * globals->change_interface is now saved in change_interface->ifaces
+	 * and can be modified by strtok_r
+	 */
+	input = globals->change_interface;
+	while ((token = strtok_r(input, ",", &saveptr))) {
+		input = NULL;
+
+		ret = check_interface(token);
+		if (ret < 0)
+			return 0;
+	}
 
 	ret = write(globals->unix_sock, buf, len);
 	if (ret != len)

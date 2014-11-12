@@ -32,11 +32,13 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
 #include "alfred.h"
 #include "batadv_query.h"
 #include "hash.h"
+#include "list.h"
 
 static int server_compare(void *d1, void *d2)
 {
@@ -217,21 +219,12 @@ static int purge_data(struct globals *globals)
 	return 0;
 }
 
-static void check_if_socket(struct globals *globals)
+static void check_if_socket(struct interface *interface)
 {
-	struct timespec now, diff;
 	int sock;
 	struct ifreq ifr;
 
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	time_diff(&now, &globals->if_check, &diff);
-
-	if (diff.tv_sec < ALFRED_IF_CHECK_INTERVAL)
-		return;
-
-	globals->if_check = now;
-
-	if (globals->netsock < 0)
+	if (interface->netsock < 0)
 		return;
 
 	sock = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -241,17 +234,17 @@ static void check_if_socket(struct globals *globals)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, globals->interface, IFNAMSIZ);
+	strncpy(ifr.ifr_name, interface->interface, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
 	if (ioctl(sock, SIOCGIFINDEX, &ifr) == -1) {
 		perror("can't get interface, closing netsock");
 		goto close;
 	}
 
-	if (globals->scope_id != (uint32_t)ifr.ifr_ifindex) {
+	if (interface->scope_id != (uint32_t)ifr.ifr_ifindex) {
 		fprintf(stderr,
 			"iface index changed from %"PRIu32" to %d, closing netsock\n",
-			globals->scope_id, ifr.ifr_ifindex);
+			interface->scope_id, ifr.ifr_ifindex);
 		goto close;
 	}
 
@@ -260,7 +253,7 @@ static void check_if_socket(struct globals *globals)
 		goto close;
 	}
 
-	if (memcmp(&globals->hwaddr, &ifr.ifr_hwaddr.sa_data, 6) != 0) {
+	if (memcmp(&interface->hwaddr, &ifr.ifr_hwaddr.sa_data, 6) != 0) {
 		fprintf(stderr, "iface mac changed, closing netsock\n");
 		goto close;
 	}
@@ -269,16 +262,34 @@ static void check_if_socket(struct globals *globals)
 	return;
 
 close:
-	netsock_close(globals->netsock);
-	globals->netsock = -1;
+	close(interface->netsock);
+	interface->netsock = -1;
 	close(sock);
+}
+
+static void check_if_sockets(struct globals *globals)
+{
+	struct timespec now, diff;
+	struct interface *interface;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	time_diff(&now, &globals->if_check, &diff);
+
+	if (diff.tv_sec < ALFRED_IF_CHECK_INTERVAL)
+		return;
+
+	globals->if_check = now;
+
+	list_for_each_entry(interface, &globals->interfaces, list)
+		check_if_socket(interface);
 }
 
 int alfred_server(struct globals *globals)
 {
-	int maxsock, ret;
+	int maxsock, ret, recvs;
 	struct timespec last_check, now, tv;
 	fd_set fds, errfds;
+	int num_socks;
 
 	if (create_hashes(globals))
 		return -1;
@@ -286,7 +297,7 @@ int alfred_server(struct globals *globals)
 	if (unix_sock_open_daemon(globals))
 		return -1;
 
-	if (!globals->interface) {
+	if (list_empty(&globals->interfaces)) {
 		fprintf(stderr, "Can't start server: interface missing\n");
 		return -1;
 	}
@@ -295,8 +306,16 @@ int alfred_server(struct globals *globals)
 	    batadv_interface_check(globals->mesh_iface) < 0)
 		return -1;
 
-	if (netsock_open(globals))
+	num_socks = netsock_open_all(globals);
+	if (num_socks <= 0) {
+		fprintf(stderr, "Failed to open interfaces\n");
 		return -1;
+	}
+
+	if (num_socks > 1 && globals->opmode == OPMODE_SLAVE) {
+		fprintf(stderr, "More than one interface specified in slave mode\n");
+		return -1;
+	}
 
 	clock_gettime(CLOCK_MONOTONIC, &last_check);
 	globals->if_check = last_check;
@@ -309,42 +328,31 @@ int alfred_server(struct globals *globals)
 			tv.tv_nsec = 0;
 		}
 
-		if (globals->netsock < 0)
-			netsock_open(globals);
-
-		maxsock = -1;
-		if (globals->netsock > maxsock)
-			maxsock = globals->netsock;
-		if (globals->unix_sock > maxsock)
-			maxsock = globals->unix_sock;
+		netsock_reopen(globals);
 
 		FD_ZERO(&fds);
 		FD_ZERO(&errfds);
 		FD_SET(globals->unix_sock, &fds);
-		if (globals->netsock >= 0) {
-			FD_SET(globals->netsock, &fds);
-			FD_SET(globals->netsock, &errfds);
-		}
+		maxsock = globals->unix_sock;
+
+		maxsock = netsock_prepare_select(globals, &fds, maxsock);
+		maxsock = netsock_prepare_select(globals, &errfds, maxsock);
+
 		ret = pselect(maxsock + 1, &fds, NULL, &errfds, &tv, NULL);
 
 		if (ret == -1) {
 			perror("main loop select failed ...");
 		} else if (ret) {
-			if (globals->netsock >= 0 &&
-			    FD_ISSET(globals->netsock, &errfds)) {
-				fprintf(stderr, "Error on netsock detected\n");
-				netsock_close(globals->netsock);
-				globals->netsock = -1;
-			}
+			netsock_check_error(globals, &errfds);
 
 			if (FD_ISSET(globals->unix_sock, &fds)) {
 				printf("read unix socket\n");
 				unix_sock_read(globals);
 				continue;
-			} else if (globals->netsock >= 0 &&
-				   FD_ISSET(globals->netsock, &fds)) {
-				recv_alfred_packet(globals);
-				continue;
+			} else {
+				recvs = netsock_receive_packet(globals, &fds);
+				if (recvs > 0)
+					continue;
 			}
 		}
 		clock_gettime(CLOCK_MONOTONIC, &last_check);
@@ -359,11 +367,10 @@ int alfred_server(struct globals *globals)
 			push_local_data(globals);
 		}
 		purge_data(globals);
-		check_if_socket(globals);
+		check_if_sockets(globals);
 	}
 
-	if (globals->netsock >= 0)
-		netsock_close(globals->netsock);
+	netsock_close_all(globals);
 	unix_sock_close(globals);
 	return 0;
 }

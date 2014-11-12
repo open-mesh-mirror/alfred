@@ -26,30 +26,32 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "alfred.h"
 #include "hash.h"
 #include "packet.h"
+#include "list.h"
 
 int announce_master(struct globals *globals)
 {
 	struct alfred_announce_master_v0 announcement;
+	struct interface *interface;
 
-	if (globals->netsock < 0)
-		return -1;
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		announcement.header.type = ALFRED_ANNOUNCE_MASTER;
+		announcement.header.version = ALFRED_VERSION;
+		announcement.header.length = htons(0);
 
-	announcement.header.type = ALFRED_ANNOUNCE_MASTER;
-	announcement.header.version = ALFRED_VERSION;
-	announcement.header.length = htons(0);
-
-	send_alfred_packet(globals, &in6addr_localmcast, &announcement,
-			   sizeof(announcement));
+		send_alfred_packet(interface, &in6addr_localmcast,
+				   &announcement, sizeof(announcement));
+	}
 
 	return 0;
 }
 
-int push_data(struct globals *globals, struct in6_addr *destination,
-	      enum data_source max_source_level, int type_filter,
-	      uint16_t tx_id)
+int push_data(struct globals *globals, struct interface *interface,
+	      struct in6_addr *destination, enum data_source max_source_level,
+	      int type_filter, uint16_t tx_id)
 {
 	struct hash_it_t *hashit = NULL;
 	uint8_t buf[MAX_PAYLOAD];
@@ -84,7 +86,7 @@ int push_data(struct globals *globals, struct in6_addr *destination,
 			tlv_length += sizeof(*push) - sizeof(push->header);
 			push->header.length = htons(tlv_length);
 			push->tx.seqno = htons(seqno++);
-			send_alfred_packet(globals, destination, push,
+			send_alfred_packet(interface, destination, push,
 					   sizeof(*push) + total_length);
 			total_length = 0;
 		}
@@ -103,7 +105,7 @@ int push_data(struct globals *globals, struct in6_addr *destination,
 		tlv_length += sizeof(*push) - sizeof(push->header);
 		push->header.length = htons(tlv_length);
 		push->tx.seqno = htons(seqno++);
-		send_alfred_packet(globals, destination, push,
+		send_alfred_packet(interface, destination, push,
 				   sizeof(*push) + total_length);
 	}
 
@@ -117,7 +119,7 @@ int push_data(struct globals *globals, struct in6_addr *destination,
 		status_end.tx.id = tx_id;
 		status_end.tx.seqno = htons(seqno);
 
-		send_alfred_packet(globals, destination, &status_end,
+		send_alfred_packet(interface, destination, &status_end,
 				sizeof(status_end));
 	}
 
@@ -128,31 +130,40 @@ int push_data(struct globals *globals, struct in6_addr *destination,
 int sync_data(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;
+	struct interface *interface;
 
 	/* send local data and data from our clients to (all) other servers */
-	while (NULL != (hashit = hash_iterate(globals->server_hash, hashit))) {
-		struct server *server = hashit->bucket->data;
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		while (NULL != (hashit = hash_iterate(globals->server_hash,
+						      hashit))) {
+			struct server *server = hashit->bucket->data;
 
-		push_data(globals, &server->address, SOURCE_FIRST_HAND,
-			  NO_FILTER, get_random_id());
+			push_data(globals, interface, &server->address,
+				  SOURCE_FIRST_HAND, NO_FILTER,
+				  get_random_id());
+		}
 	}
 	return 0;
 }
 
 int push_local_data(struct globals *globals)
 {
+	struct interface *interface;
+
 	/* no server - yet */
 	if (!globals->best_server)
 		return -1;
 
-	push_data(globals, &globals->best_server->address, SOURCE_LOCAL,
-		  NO_FILTER, get_random_id());
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		push_data(globals, interface, &globals->best_server->address,
+			  SOURCE_LOCAL, NO_FILTER, get_random_id());
+	}
 
 	return 0;
 }
 
-ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
-			   void *buf, int length)
+ssize_t send_alfred_packet(struct interface *interface,
+			   const struct in6_addr *dest, void *buf, int length)
 {
 	ssize_t ret;
 	struct sockaddr_in6 dest_addr;
@@ -160,19 +171,19 @@ ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
 	memset(&dest_addr, 0, sizeof(dest_addr));
 	dest_addr.sin6_family = AF_INET6;
 	dest_addr.sin6_port = htons(ALFRED_PORT);
-	dest_addr.sin6_scope_id = globals->scope_id;
+	dest_addr.sin6_scope_id = interface->scope_id;
 	memcpy(&dest_addr.sin6_addr, dest, sizeof(*dest));
 
-	if (globals->netsock < 0)
+	if (interface->netsock < 0)
 		return 0;
 
-	ret = sendto(globals->netsock, buf, length, 0,
+	ret = sendto(interface->netsock, buf, length, 0,
 		     (struct sockaddr *)&dest_addr,
 		     sizeof(struct sockaddr_in6));
 	if (ret == -EPERM) {
 		perror("Error during sent");
-		netsock_close(globals->netsock);
-		globals->netsock = -1;
+		close(interface->netsock);
+		interface->netsock = -1;
 	}
 
 	return ret;

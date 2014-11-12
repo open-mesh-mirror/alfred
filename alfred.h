@@ -27,6 +27,8 @@
 #include <netinet/in.h>
 #include <stdint.h>
 #include <time.h>
+#include <sys/select.h>
+#include <sys/types.h>
 #include "list.h"
 #include "packet.h"
 
@@ -89,19 +91,27 @@ enum clientmode {
 	CLIENT_CHANGE_INTERFACE,
 };
 
-struct globals {
+struct interface {
 	struct ether_addr hwaddr;
 	struct in6_addr address;
 	uint32_t scope_id;
-	struct server *best_server;	/* NULL if we are a server ourselves */
 	char *interface;
+	int netsock;
+
+	struct list_head list;
+};
+
+struct globals {
+	struct list_head interfaces;
+
+	char *change_interface;
+	struct server *best_server;	/* NULL if we are a server ourselves */
 	const char *mesh_iface;
 	enum opmode opmode;
 	enum clientmode clientmode;
 	int clientmode_arg;
 	int clientmode_version;
 
-	int netsock;
 	int unix_sock;
 	const char *unix_path;
 
@@ -128,7 +138,7 @@ int alfred_client_set_data(struct globals *globals);
 int alfred_client_modeswitch(struct globals *globals);
 int alfred_client_change_interface(struct globals *globals);
 /* recv.c */
-int recv_alfred_packet(struct globals *globals);
+int recv_alfred_packet(struct globals *globals, struct interface *interface);
 struct transaction_head *
 transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id);
 struct transaction_head *
@@ -137,14 +147,14 @@ transaction_clean_hash(struct globals *globals,
 struct transaction_head *transaction_clean(struct globals *globals,
 					   struct transaction_head *head);
 /* send.c */
-int push_data(struct globals *globals, struct in6_addr *destination,
-	      enum data_source max_source_level, int type_filter,
-	      uint16_t tx_id);
+int push_data(struct globals *globals, struct interface *interface,
+	      struct in6_addr *destination, enum data_source max_source_level,
+	      int type_filter, uint16_t tx_id);
 int announce_master(struct globals *globals);
 int push_local_data(struct globals *globals);
 int sync_data(struct globals *globals);
-ssize_t send_alfred_packet(struct globals *globals, const struct in6_addr *dest,
-			   void *buf, int length);
+ssize_t send_alfred_packet(struct interface *interface,
+			   const struct in6_addr *dest, void *buf, int length);
 /* unix_sock.c */
 int unix_sock_read(struct globals *globals);
 int unix_sock_open_daemon(struct globals *globals);
@@ -155,8 +165,16 @@ int unix_sock_req_data_finish(struct globals *globals,
 /* vis.c */
 int vis_update_data(struct globals *globals);
 /* netsock.c */
-int netsock_open(struct globals *globals);
-int netsock_close(int sock);
+int netsock_open_all(struct globals *globals);
+void netsock_close_all(struct globals *globals);
+int netsock_set_interfaces(struct globals *globals, char *interfaces);
+struct interface *netsock_first_interface(struct globals *globals);
+void netsock_reopen(struct globals *globals);
+int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock);
+void netsock_check_error(struct globals *globals, fd_set *errfds);
+int netsock_receive_packet(struct globals *globals, fd_set *fds);
+int netsock_own_address(const struct globals *globals,
+			const struct in6_addr *address);
 /* util.c */
 int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff);
