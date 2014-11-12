@@ -231,6 +231,7 @@ err:
 
 static int
 process_alfred_announce_master(struct globals *globals,
+			       struct interface *interface,
 			       struct in6_addr *source,
 			       struct alfred_announce_master_v0 *announce)
 {
@@ -252,7 +253,7 @@ process_alfred_announce_master(struct globals *globals,
 	if (len != (sizeof(*announce) - sizeof(announce->header)))
 		return -1;
 
-	server = hash_find(globals->server_hash, &mac);
+	server = hash_find(interface->server_hash, &mac);
 	if (!server) {
 		server = malloc(sizeof(*server));
 		if (!server)
@@ -261,7 +262,7 @@ process_alfred_announce_master(struct globals *globals,
 		memcpy(&server->hwaddr, &mac, ETH_ALEN);
 		memcpy(&server->address, source, sizeof(*source));
 
-		if (hash_add(globals->server_hash, server)) {
+		if (hash_add(interface->server_hash, server)) {
 			free(server);
 			return -1;
 		}
@@ -414,7 +415,8 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface)
 					 (struct alfred_push_data_v0 *)packet);
 		break;
 	case ALFRED_ANNOUNCE_MASTER:
-		process_alfred_announce_master(globals, &source.sin6_addr,
+		process_alfred_announce_master(globals, interface,
+					       &source.sin6_addr,
 					       (struct alfred_announce_master_v0 *)packet);
 		break;
 	case ALFRED_REQUEST:

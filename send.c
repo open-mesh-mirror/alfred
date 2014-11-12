@@ -134,7 +134,7 @@ int sync_data(struct globals *globals)
 
 	/* send local data and data from our clients to (all) other servers */
 	list_for_each_entry(interface, &globals->interfaces, list) {
-		while (NULL != (hashit = hash_iterate(globals->server_hash,
+		while (NULL != (hashit = hash_iterate(interface->server_hash,
 						      hashit))) {
 			struct server *server = hashit->bucket->data;
 

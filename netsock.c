@@ -28,19 +28,51 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <unistd.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <sys/select.h>
 #include "alfred.h"
 #include "batadv_query.h"
 #include "packet.h"
 #include "list.h"
+#include "hash.h"
 
 const struct in6_addr in6addr_localmcast = {{{ 0xff, 0x02, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x00,
 					       0x00, 0x00, 0x00, 0x01 } } };
+
+static int server_compare(void *d1, void *d2)
+{
+	struct server *s1 = d1, *s2 = d2;
+	/* compare source and type */
+	if (memcmp(&s1->hwaddr, &s2->hwaddr, sizeof(s1->hwaddr)) == 0)
+		return 1;
+	else
+		return 0;
+}
+
+static int server_choose(void *d1, int size)
+{
+	struct server *s1 = d1;
+	uint32_t hash = 0;
+	size_t i;
+
+	for (i = 0; i < sizeof(s1->hwaddr); i++) {
+		hash += s1->hwaddr.ether_addr_octet[i];
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+	return hash % size;
+}
 
 void netsock_close_all(struct globals *globals)
 {
@@ -50,9 +82,12 @@ void netsock_close_all(struct globals *globals)
 		if (interface->netsock >= 0)
 			close(interface->netsock);
 		list_del(&interface->list);
+		hash_delete(interface->server_hash, free);
 		free(interface->interface);
 		free(interface);
 	}
+
+	globals->best_server = NULL;
 }
 
 struct interface *netsock_first_interface(struct globals *globals)
@@ -106,9 +141,19 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 		interface->scope_id = 0;
 		interface->interface = NULL;
 		interface->netsock = -1;
+		interface->server_hash = NULL;
 
 		interface->interface = strdup(token);
 		if (!interface->interface) {
+			free(interface);
+			netsock_close_all(globals);
+			return -ENOMEM;
+		}
+
+		interface->server_hash = hash_new(64, server_compare,
+						  server_choose);
+		if (!interface->server_hash) {
+			free(interface->interface);
 			free(interface);
 			netsock_close_all(globals);
 			return -ENOMEM;

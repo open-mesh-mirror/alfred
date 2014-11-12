@@ -98,6 +98,8 @@ struct interface {
 	char *interface;
 	int netsock;
 
+	struct hashtable_t *server_hash;
+
 	struct list_head list;
 };
 
@@ -117,7 +119,6 @@ struct globals {
 
 	struct timespec if_check;
 
-	struct hashtable_t *server_hash;
 	struct hashtable_t *data_hash;
 	struct hashtable_t *transaction_hash;
 };

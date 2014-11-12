@@ -40,35 +40,6 @@
 #include "hash.h"
 #include "list.h"
 
-static int server_compare(void *d1, void *d2)
-{
-	struct server *s1 = d1, *s2 = d2;
-	/* compare source and type */
-	if (memcmp(&s1->hwaddr, &s2->hwaddr, sizeof(s1->hwaddr)) == 0)
-		return 1;
-	else
-		return 0;
-}
-
-static int server_choose(void *d1, int size)
-{
-	struct server *s1 = d1;
-	uint32_t hash = 0;
-	size_t i;
-
-	for (i = 0; i < sizeof(s1->hwaddr); i++) {
-		hash += s1->hwaddr.ether_addr_octet[i];
-		hash += (hash << 10);
-		hash ^= (hash >> 6);
-	}
-
-	hash += (hash << 3);
-	hash ^= (hash >> 11);
-	hash += (hash << 15);
-
-	return hash % size;
-}
-
 static int data_compare(void *d1, void *d2)
 {
 	/* compare source and type */
@@ -135,11 +106,9 @@ static int tx_choose(void *d1, int size)
 
 static int create_hashes(struct globals *globals)
 {
-	globals->server_hash = hash_new(64, server_compare, server_choose);
 	globals->data_hash = hash_new(128, data_compare, data_choose);
 	globals->transaction_hash = hash_new(64, tx_compare, tx_choose);
-	if (!globals->server_hash || !globals->data_hash ||
-	    !globals->transaction_hash)
+	if (!globals->data_hash || !globals->transaction_hash)
 		return -1;
 
 	return 0;
@@ -150,13 +119,17 @@ int set_best_server(struct globals *globals)
 	struct hash_it_t *hashit = NULL;
 	struct server *best_server = NULL;
 	int best_tq = -1;
+	struct interface *interface;
 
-	while (NULL != (hashit = hash_iterate(globals->server_hash, hashit))) {
-		struct server *server = hashit->bucket->data;
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		while (NULL != (hashit = hash_iterate(interface->server_hash,
+						      hashit))) {
+			struct server *server = hashit->bucket->data;
 
-		if (server->tq > best_tq) {
-			best_tq = server->tq;
-			best_server = server;
+			if (server->tq > best_tq) {
+				best_tq = server->tq;
+				best_server = server;
+			}
 		}
 	}
 
@@ -169,6 +142,7 @@ static int purge_data(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;
 	struct timespec now, diff;
+	struct interface *interface;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
@@ -184,18 +158,21 @@ static int purge_data(struct globals *globals)
 		free(dataset);
 	}
 
-	while (NULL != (hashit = hash_iterate(globals->server_hash, hashit))) {
-		struct server *server = hashit->bucket->data;
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		while (NULL != (hashit = hash_iterate(interface->server_hash,
+						      hashit))) {
+			struct server *server = hashit->bucket->data;
 
-		time_diff(&now, &server->last_seen, &diff);
-		if (diff.tv_sec < ALFRED_SERVER_TIMEOUT)
-			continue;
+			time_diff(&now, &server->last_seen, &diff);
+			if (diff.tv_sec < ALFRED_SERVER_TIMEOUT)
+				continue;
 
-		if (globals->best_server == server)
-			globals->best_server = NULL;
+			if (globals->best_server == server)
+				globals->best_server = NULL;
 
-		hash_remove_bucket(globals->server_hash, hashit);
-		free(server);
+			hash_remove_bucket(interface->server_hash, hashit);
+			free(server);
+		}
 	}
 
 	if (!globals->best_server)
