@@ -20,7 +20,7 @@
  */
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION			"2014.4.0"
+#define SOURCE_VERSION			"2014.5"
 #endif
 
 #include <net/ethernet.h>
