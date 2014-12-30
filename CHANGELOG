@@ -1,3 +1,14 @@
+alfred 2014.4.0:
+
+ * add support for multiple interfaces per master
+ * add support for changing interfaces on the fly
+ * changes to support multiple alfred interfaces:
+   - bind alfred to a specific interface
+   - allow configuring the unix socket path
+ * enhanced debugging
+
+ -- Wed, 31 Dec 2014 00:40:42 +0100
+
 alfred 2014.3.0:
 
  * fix various possible memleak, access errors and strncpy issues
