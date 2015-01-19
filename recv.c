@@ -402,7 +402,8 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface)
 		return -1;
 
 	/* drop truncated packets */
-	if (length < ((int)ntohs(packet->length)))
+	if (length < (int)sizeof(*packet) ||
+	    length < (int)(ntohs(packet->length) + sizeof(*packet)))
 		return -1;
 
 	/* drop incompatible packet */
