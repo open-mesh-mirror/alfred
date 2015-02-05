@@ -84,6 +84,8 @@ int unix_sock_open_client(struct globals *globals)
 
 	if (connect(globals->unix_sock, (struct sockaddr *)&addr,
 		    sizeof(addr)) < 0) {
+		close(globals->unix_sock);
+		globals->unix_sock = -1;
 		perror("can't connect to unix socket");
 		return -1;
 	}
