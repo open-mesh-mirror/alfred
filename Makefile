@@ -27,6 +27,9 @@ MANPAGE = man/alfred.8
 CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
 LDLIBS += -lrt
 
+# Turn on alfred capability dropping by default - set this to n if you don't want/need it
+export CONFIG_ALFRED_CAPABILITIES=y
+
 # disable verbose output
 ifneq ($(findstring $(MAKEFLAGS),s),s)
 ifndef V
@@ -68,6 +71,27 @@ ifneq ($(CONFIG_ALFRED_GPSD),n)
 	GPSD_ALL=gpsd-all
 	GPSD_CLEAN=gpsd-clean
 	GPSD_INSTALL=gpsd-install
+endif
+
+ifneq ($(CONFIG_ALFRED_CAPABILITIES),n)
+  ifeq ($(origin PKG_CONFIG), undefined)
+    PKG_CONFIG = pkg-config
+    ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
+      $(error $(PKG_CONFIG) not found)
+    endif
+  endif
+
+  ifeq ($(origin LIBCAP_CFLAGS) $(origin LIBCAP_LDLIBS), undefined undefined)
+    LIBCAP_NAME ?= libcap
+    ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBCAP_NAME) 2>/dev/null),)
+      $(error No $(LIBCAP_NAME) development libraries found!)
+    endif
+    LIBCAP_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBCAP_NAME))
+    LIBCAP_LDLIBS +=  $(shell $(PKG_CONFIG) --libs $(LIBCAP_NAME))
+  endif
+  CFLAGS += $(LIBCAP_CFLAGS)
+  CPPFLAGS += -DCONFIG_ALFRED_CAPABILITIES
+  LDLIBS += $(LIBCAP_LDLIBS)
 endif
 
 

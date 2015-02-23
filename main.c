@@ -24,6 +24,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef CONFIG_ALFRED_CAPABILITIES
+#include <sys/prctl.h>
+#include <sys/capability.h>
+#include <unistd.h>
+#endif
 #include "alfred.h"
 #include "packet.h"
 #include "list.h"
@@ -60,9 +65,82 @@ static void alfred_usage(void)
 	printf("\n");
 }
 
+static int reduce_capabilities(void)
+{
+	int ret = 0;
+
+#ifdef CONFIG_ALFRED_CAPABILITIES
+	cap_t cap_cur;
+	cap_t cap_new;
+	cap_flag_value_t cap_flag;
+	cap_value_t cap_net_raw = CAP_NET_RAW;
+
+	/* get current process capabilities */
+	cap_cur = cap_get_proc();
+	if (!cap_cur) {
+		perror("cap_get_proc");
+		return -1;
+	}
+
+	/* create new capabilities */
+	cap_new = cap_init();
+	if (!cap_new) {
+		perror("cap_init");
+		cap_free(cap_new);
+		return -1;
+	}
+
+	/* copy capability as non-effictive but permitted */
+	cap_flag = CAP_CLEAR;
+	cap_get_flag(cap_cur, CAP_NET_RAW, CAP_PERMITTED, &cap_flag);
+	if (cap_flag != CAP_CLEAR) {
+		ret = cap_set_flag(cap_new, CAP_PERMITTED, 1, &cap_net_raw,
+				   CAP_SET);
+		if (ret < 0) {
+			perror("cap_set_flag");
+			goto out;
+		}
+	}
+
+	/* set minimal capabilities field */
+	ret = cap_set_proc(cap_new);
+	if (ret < 0) {
+		perror("cap_set_proc");
+		goto out;
+	}
+
+	/* don't drop capabilities with setuid */
+	ret = prctl(PR_SET_KEEPCAPS, 1);
+	if (ret < 0) {
+		perror("prctl PR_SET_KEEPCAPS(1)");
+		goto out;
+	}
+
+	/* drop euid */
+	ret = setuid(getuid());
+	if (ret < 0) {
+		perror("setuid");
+		goto out;
+	}
+
+	/* drop capabilities with setuid */
+	ret = prctl(PR_SET_KEEPCAPS, 0);
+	if (ret < 0) {
+		perror("prctl PR_SET_KEEPCAPS(0)");
+		goto out;
+	}
+
+out:
+	cap_free(cap_new);
+	cap_free(cap_cur);
+#endif
+
+	return ret;
+}
+
 static struct globals *alfred_init(int argc, char *argv[])
 {
-	int opt, opt_ind, i;
+	int opt, opt_ind, i, ret;
 	struct globals *globals;
 	struct option long_options[] = {
 		{"set-data",		required_argument,	NULL,	's'},
@@ -77,6 +155,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"version",		no_argument,		NULL,	'v'},
 		{NULL,			0,			NULL,	0},
 	};
+
+	ret = reduce_capabilities();
+	if (ret < 0)
+		return NULL;
 
 	globals = &alfred_globals;
 	memset(globals, 0, sizeof(*globals));

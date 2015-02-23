@@ -34,6 +34,9 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/select.h>
+#ifdef CONFIG_ALFRED_CAPABILITIES
+#include <sys/capability.h>
+#endif
 #include "alfred.h"
 #include "batadv_query.h"
 #include "packet.h"
@@ -165,6 +168,45 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 	return 0;
 }
 
+static int enable_raw_bind_capability(int enable)
+{
+	int ret = 0;
+
+#ifdef CONFIG_ALFRED_CAPABILITIES
+	cap_t cap_cur;
+	cap_flag_value_t cap_flag;
+	cap_value_t cap_net_raw = CAP_NET_RAW;
+
+	if (enable)
+		cap_flag = CAP_SET;
+	else
+		cap_flag = CAP_CLEAR;
+
+	cap_cur = cap_get_proc();
+	if (!cap_cur) {
+		perror("cap_get_proc");
+		return -1;
+	}
+
+	ret = cap_set_flag(cap_cur, CAP_EFFECTIVE, 1, &cap_net_raw, cap_flag);
+	if (ret < 0) {
+		perror("cap_set_flag");
+		goto out;
+	}
+
+	ret = cap_set_proc(cap_cur);
+	if (ret < 0) {
+		perror("cap_set_proc");
+		goto out;
+	}
+
+out:
+	cap_free(cap_cur);
+#endif
+
+	return ret;
+}
+
 static int netsock_open(struct interface *interface)
 {
 	int sock;
@@ -204,11 +246,13 @@ static int netsock_open(struct interface *interface)
 	memcpy(&interface->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
 	mac_to_ipv6(&interface->hwaddr, &interface->address);
 
+	enable_raw_bind_capability(1);
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
 		       strlen(interface->interface) + 1)) {
 		perror("can't bind to device");
 		goto err;
 	}
+	enable_raw_bind_capability(0);
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
 		perror("can't bind");
