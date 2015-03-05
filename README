@@ -256,6 +256,32 @@ To get JSON formatted output, use:
 
 See gpsd_json(5) for documentation of the tpv object. 
 
+Running alfred as non-root user
+-------------------------------
+
+Alfred currently requires special capabilities and access rights to work
+correctly. The user root is normally the only user having these
+capabilities/rights on a standard Linux system.
+
+Operations requiring special capabilities:
+
+ * bind to device
+ * creating the unix socket
+ * accessing the debugfs filesystem
+
+The first operation can still be executed when the admin grants the special
+capability CAP_NET_RAW to anyone executing the alfred binary. The unix socket
+can also be moved using the parameter '-u' to a different directory which can
+be accessed by the user.
+
+ $ sudo setcap cap_net_raw+ep alfred
+ $ ./alfred -u alfred.sock -i eth0
+
+The user running alfred must still be in a group which is allowed to access
+/sys/kernel/debugfs to correctly choose best neighbors for communication.
+It is possible (but not recommended) to disable the neighbor
+selection/prioritization using the parameter '-b none'.
+
 License
 -------
 
