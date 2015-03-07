@@ -91,6 +91,7 @@ static int finish_alfred_push_data(struct globals *globals,
 			goto err;
 
 		dataset->data.header.length = data_len;
+		dataset->data.header.version = data->header.version;
 		memcpy(dataset->buf, data->data, data_len);
 
 		/* if the sender is also the the source of the dataset, we

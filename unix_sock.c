@@ -151,6 +151,7 @@ static int unix_sock_add_data(struct globals *globals,
 		goto err;
 
 	dataset->data.header.length = data_len;
+	dataset->data.header.version = data->header.version;
 	memcpy(dataset->buf, data->data, data_len);
 
 	ret = 0;
