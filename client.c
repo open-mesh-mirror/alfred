@@ -121,7 +121,12 @@ int alfred_client_request_data(struct globals *globals)
 				printf("%c", pos[i]);
 		}
 
-		printf("\" },\n");
+		printf("\"");
+
+		if (globals->verbose)
+			printf(", %u", data->header.version);
+
+		printf(" },\n");
 	}
 
 	unix_sock_close(globals);

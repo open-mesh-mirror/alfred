@@ -43,6 +43,7 @@ static void alfred_usage(void)
 	printf("                                      for the supplied data type (0-255)\n");
 	printf("  -r, --request [data type]           collect data from the network and prints\n");
 	printf("                                      it on the network\n");
+	printf("  -d, --verbose                       Show extra information in the data output\n");
 	printf("  -V, --req-version                   specify the data version set for -s\n");
 	printf("  -M, --modeswitch master             switch daemon to mode master\n");
 	printf("                   slave              switch daemon to mode slave\n");
@@ -153,6 +154,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"change-interface",	required_argument,	NULL,	'I'},
 		{"unix-path",		required_argument,	NULL,	'u'},
 		{"version",		no_argument,		NULL,	'v'},
+		{"verbose",		no_argument,		NULL,	'd'},
 		{NULL,			0,			NULL,	0},
 	};
 
@@ -171,10 +173,11 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->clientmode_version = 0;
 	globals->mesh_iface = "bat0";
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
+	globals->verbose = 0;
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:d", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -230,6 +233,9 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case 'u':
 			globals->unix_path = optarg;
+			break;
+		case 'd':
+			globals->verbose++;
 			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);
