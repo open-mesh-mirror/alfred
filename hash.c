@@ -204,7 +204,7 @@ struct hashtable_t *hash_new(int size, hashdata_compare_cb compare,
 		return NULL;
 
 	hash->size = size;
-	hash->table = debugMalloc(sizeof(struct element_t *)*size, 303);
+	hash->table = debugMalloc(sizeof(struct element_t *) * size, 303);
 
 	if (!hash->table) {
 		debugFree(hash, 1305);

@@ -91,7 +91,7 @@ int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
 int batadv_interface_check(const char *mesh_iface)
 {
 	char *debugfs_mnt;
-	char full_path[MAX_PATH+1];
+	char full_path[MAX_PATH + 1];
 	FILE *f;
 
 	debugfs_mnt = debugfs_mount(NULL);
@@ -133,7 +133,7 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 		tg_via,
 		tg_originator,
 	} pos;
-	char full_path[MAX_PATH+1];
+	char full_path[MAX_PATH + 1];
 	char *debugfs_mnt;
 	static struct ether_addr in_mac;
 	struct ether_addr *mac_result, *mac_tmp;
@@ -215,7 +215,7 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 		orig_tqstart,
 		orig_tqvalue,
 	} pos;
-	char full_path[MAX_PATH+1];
+	char full_path[MAX_PATH + 1];
 	char *debugfs_mnt;
 	static struct ether_addr in_mac;
 	struct ether_addr *mac_tmp;
