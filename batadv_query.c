@@ -269,10 +269,10 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 				} else if (strlen(token) == 1) {
 					pos = orig_tqvalue;
 					break;
-				} else {
-					/* fall through */
-					token++;
 				}
+
+				token++;
+				/* fall through */
 			case orig_tqvalue:
 				if (token[strlen(token) - 1] != ')') {
 					line_invalid = 1;
