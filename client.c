@@ -145,7 +145,7 @@ recv_err:
 	status = (struct alfred_status_v0 *)buf;
 	fprintf(stderr, "Request failed with %d\n", status->tx.seqno);
 
-	return status->tx.seqno;;
+	return status->tx.seqno;
 }
 
 int alfred_client_set_data(struct globals *globals)
