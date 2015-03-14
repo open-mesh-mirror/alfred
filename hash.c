@@ -292,12 +292,13 @@ void *hash_remove(struct hashtable_t *hash, void *data)
 
 	while (hash_it_t.bucket != NULL) {
 		if (hash->compare(hash_it_t.bucket->data, data)) {
-			int bucket_same;
-			bucket_same = (hash_it_t.bucket ==
-				       hash->table[hash_it_t.index]);
-			hash_it_t.first_bucket = (bucket_same ?
-						  &hash->table[hash_it_t.index] :
-						  NULL);
+			struct element_t **first_bucket = NULL;
+
+			if (hash_it_t.bucket == hash->table[hash_it_t.index])
+				first_bucket = &hash->table[hash_it_t.index];
+
+			hash_it_t.first_bucket = first_bucket;
+
 			return hash_remove_bucket(hash, &hash_it_t);
 		}
 

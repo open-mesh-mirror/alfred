@@ -265,11 +265,13 @@ int alfred_client_change_interface(struct globals *globals)
 	struct alfred_change_interface_v0 *change_interface;
 	int ret, len;
 	char *input, *token, *saveptr;
+	size_t interface_len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
 
-	if (strlen(globals->change_interface) > sizeof(change_interface->ifaces)) {
+	interface_len = strlen(globals->change_interface);
+	if (interface_len > sizeof(change_interface->ifaces)) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
 		return 0;
