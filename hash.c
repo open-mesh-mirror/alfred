@@ -44,19 +44,16 @@ void hash_delete(struct hashtable_t *hash, hashdata_free_cb free_cb)
 	int i;
 
 	for (i = 0; i < hash->size; i++) {
-
 		bucket = hash->table[i];
-		while (bucket) {
 
+		while (bucket) {
 			if (free_cb)
 				free_cb(bucket->data);
 
 			last_bucket = bucket;
 			bucket = bucket->next;
 			debugFree(last_bucket, 1301);
-
 		}
-
 	}
 
 	hash_destroy(hash);
@@ -130,11 +127,9 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 	 * iteration): */
 	if (iter->bucket) {
 		if (iter->first_bucket) {
-
 			/* we're on the first element and it got removed after
 			 * the last iteration. */
 			if ((*iter->first_bucket) != iter->bucket) {
-
 				/* there are still other elements in the list */
 				if (*iter->first_bucket) {
 					iter->prev_bucket = NULL;
@@ -145,18 +140,14 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 
 				iter->bucket = NULL;
 			}
-
 		} else if (iter->prev_bucket) {
-
 			/* we're not on the first element, and the bucket got
 			 * removed after the last iteration. The last bucket's
 			 * next pointer is not pointing to our actual bucket
 			 * anymore. Select the next. */
 			if (iter->prev_bucket->next != iter->bucket)
 				iter->bucket = iter->prev_bucket;
-
 		}
-
 	}
 
 	/* now as we are sane, select the next one if there is some */
@@ -174,7 +165,6 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 	iter->index++;
 	/* go through the entries of the hash table */
 	while (iter->index < hash->size) {
-
 		if (!hash->table[iter->index]) {
 			iter->index++;
 			continue;
