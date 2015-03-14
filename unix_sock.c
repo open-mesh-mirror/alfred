@@ -389,7 +389,7 @@ int unix_sock_read(struct globals *globals)
 	case ALFRED_MODESWITCH:
 		ret = unix_sock_modesw(globals,
 				       (struct alfred_modeswitch_v0 *)packet,
-					client_sock);
+				       client_sock);
 		break;
 	case ALFRED_CHANGE_INTERFACE:
 		ret = unix_sock_change_iface(globals,

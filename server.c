@@ -72,7 +72,7 @@ static int tx_compare(void *d1, void *d2)
 
 	if (memcmp(&txh1->server_addr, &txh2->server_addr,
 		   sizeof(txh1->server_addr)) == 0 &&
-	   txh1->id == txh2->id)
+	    txh1->id == txh2->id)
 		return 1;
 	else
 		return 0;

@@ -120,7 +120,7 @@ int push_data(struct globals *globals, struct interface *interface,
 		status_end.tx.seqno = htons(seqno);
 
 		send_alfred_packet(interface, destination, &status_end,
-				sizeof(status_end));
+				   sizeof(status_end));
 	}
 
 	return 0;
