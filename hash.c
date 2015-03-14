@@ -241,7 +241,7 @@ void *hash_find(struct hashtable_t *hash, void *keydata)
 	int index;
 	struct element_t *bucket;
 
-	index = hash->choose(keydata , hash->size);
+	index = hash->choose(keydata, hash->size);
 	bucket = hash->table[index];
 
 	while (bucket) {
