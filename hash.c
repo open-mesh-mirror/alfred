@@ -142,10 +142,9 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 					iter->bucket = (*iter->first_bucket);
 					iter->first_bucket = &hash->table[iter->index];
 					return iter;
-				} else {
-					iter->bucket = NULL;
 				}
 
+				iter->bucket = NULL;
 			}
 
 		} else if (iter->prev_bucket != NULL) {

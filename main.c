@@ -265,19 +265,14 @@ int main(int argc, char *argv[])
 	switch (globals->clientmode) {
 	case CLIENT_NONE:
 		return alfred_server(globals);
-		break;
 	case CLIENT_REQUEST_DATA:
 		return alfred_client_request_data(globals);
-		break;
 	case CLIENT_SET_DATA:
 		return alfred_client_set_data(globals);
-		break;
 	case CLIENT_MODESWITCH:
 		return alfred_client_modeswitch(globals);
-		break;
 	case CLIENT_CHANGE_INTERFACE:
 		return alfred_client_change_interface(globals);
-		break;
 	}
 
 	return 0;
