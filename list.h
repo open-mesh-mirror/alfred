@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 1991-2013 linux kernel contributors
- * 
+ *
  * Linus Torvalds, ...
  *
  * This program is free software; you can redistribute it and/or

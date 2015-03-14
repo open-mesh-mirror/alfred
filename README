@@ -44,13 +44,13 @@ This will compile alfred, batadv-vis & alfred-gpsd. To install, use
 
 If you don't want to compile batadv-vis, add the directive CONFIG_ALFRED_VIS=n:
 
- $ make CONFIG_ALFRED_VIS=n 
+ $ make CONFIG_ALFRED_VIS=n
  $ make CONFIG_ALFRED_VIS=n install
 
 If you don't want to compile alfred-gpsd, add the directive
 CONFIG_ALFRED_GPSD=n:
 
- $ make CONFIG_ALFRED_GPSD=n 
+ $ make CONFIG_ALFRED_GPSD=n
  $ make CONFIG_ALFRED_GPSD=n install
 
 
@@ -254,7 +254,7 @@ To get JSON formatted output, use:
   { "source" : "8e:4c:77:b3:65:b4", "tpv" : {"class":"TPV","device":"command line","time":"2013-10-01T10:43:05.129Z","lat":48.858222,"lon":2.2945,"alt":358.000000,"mode":3} }
 ]
 
-See gpsd_json(5) for documentation of the tpv object. 
+See gpsd_json(5) for documentation of the tpv object.
 
 Running alfred as non-root user
 -------------------------------

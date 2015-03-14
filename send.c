@@ -110,7 +110,7 @@ int push_data(struct globals *globals, struct interface *interface,
 	}
 
 	/* send transaction txend packet */
-	if (seqno > 0 || type_filter != NO_FILTER) { 
+	if (seqno > 0 || type_filter != NO_FILTER) {
 		status_end.header.type = ALFRED_STATUS_TXEND;
 		status_end.header.version = ALFRED_VERSION;
 		length = sizeof(status_end) - sizeof(status_end.header);
