@@ -165,7 +165,7 @@ struct alfred_change_interface_v0 {
  *
  * The sequence number has a special meaning. Failure status packets use
  * it to store the error code. Success status packets store the number of
- * transfered packets in it.
+ * transferred packets in it.
  *
  * Sent as unicast to the node requesting the data
  */
