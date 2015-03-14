@@ -158,7 +158,6 @@ struct alfred_change_interface_v0 {
 	char ifaces[IFNAMSIZ * 16];
 } __packed;
 
-
 /**
  * struct alfred_status_v0 - Status info of a transaction
  * @header: TLV header describing the complete packet

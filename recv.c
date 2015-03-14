@@ -287,7 +287,6 @@ process_alfred_announce_master(struct globals *globals,
 	return 0;
 }
 
-
 static int process_alfred_request(struct globals *globals,
 				  struct interface *interface,
 				  struct in6_addr *source,
@@ -309,12 +308,10 @@ static int process_alfred_request(struct globals *globals,
 	return 0;
 }
 
-
 static int process_alfred_status_txend(struct globals *globals,
 				       struct in6_addr *source,
 				       struct alfred_status_v0 *request)
 {
-
 	struct transaction_head search, *head;
 	struct transaction_packet *transaction_packet, *safe;
 	struct ether_addr mac;
@@ -371,7 +368,6 @@ static int process_alfred_status_txend(struct globals *globals,
 
 	return 0;
 }
-
 
 int recv_alfred_packet(struct globals *globals, struct interface *interface)
 {

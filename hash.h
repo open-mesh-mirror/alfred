@@ -21,8 +21,6 @@
 #ifndef _BATMAN_HASH_H
 #define _BATMAN_HASH_H
 
-
-
 typedef int (*hashdata_compare_cb)(void *, void *);
 typedef int (*hashdata_choose_cb)(void *, int);
 typedef void (*hashdata_free_cb)(void *);

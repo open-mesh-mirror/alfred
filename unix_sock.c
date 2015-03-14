@@ -93,7 +93,6 @@ int unix_sock_open_client(struct globals *globals)
 	return 0;
 }
 
-
 static int unix_sock_add_data(struct globals *globals,
 			      struct alfred_push_data_v0 *push,
 			      int client_sock)
@@ -159,7 +158,6 @@ err:
 	close(client_sock);
 	return ret;
 }
-
 
 static int unix_sock_req_data_reply(struct globals *globals, int client_sock,
 				    uint16_t id, uint8_t requested_type)

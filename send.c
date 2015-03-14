@@ -126,7 +126,6 @@ int push_data(struct globals *globals, struct interface *interface,
 	return 0;
 }
 
-
 int sync_data(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;

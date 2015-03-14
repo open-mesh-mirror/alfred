@@ -102,8 +102,6 @@ static int tx_choose(void *d1, int size)
 	return hash % size;
 }
 
-
-
 static int create_hashes(struct globals *globals)
 {
 	globals->data_hash = hash_new(128, data_compare, data_choose);
@@ -351,5 +349,3 @@ int alfred_server(struct globals *globals)
 	unix_sock_close(globals);
 	return 0;
 }
-
-
