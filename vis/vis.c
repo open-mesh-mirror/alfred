@@ -274,7 +274,6 @@ static int register_interfaces(struct globals *globals)
 
 	while ((iface_dir = readdir(iface_base_dir)) != NULL) {
 		snprintf(path_buff, PATH_BUFF_LEN, SYS_MESH_IFACE_FMT, iface_dir->d_name);
-		path_buff[PATH_BUFF_LEN - 1] = '\0';
 		file_content = read_file(path_buff);
 		if (!file_content)
 			continue;
@@ -292,7 +291,6 @@ static int register_interfaces(struct globals *globals)
 		file_content = NULL;
 
 		snprintf(path_buff, PATH_BUFF_LEN, SYS_IFACE_STATUS_FMT, iface_dir->d_name);
-		path_buff[PATH_BUFF_LEN - 1] = '\0';
 		file_content = read_file(path_buff);
 		if (!file_content)
 			continue;
@@ -328,7 +326,6 @@ static int parse_orig_list(struct globals *globals)
 	struct vis_list_entry *v_entry;
 
 	snprintf(path, sizeof(path), "/sys/kernel/debug/batman_adv/%s/originators", globals->interface);
-	path[sizeof(path) - 1] = 0;
 	fbuf = read_file(path);
 	if (!fbuf)
 		return -1;

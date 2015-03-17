@@ -58,7 +58,6 @@ int debugfs_make_path(const char *fmt, const char *mesh_iface, char *buffer,
 		return len+1;
 
 	snprintf(buffer, size-1, fmt, debugfs_mountpoint, mesh_iface);
-	buffer[size - 1] = '\0';
 	return 0;
 }
 
