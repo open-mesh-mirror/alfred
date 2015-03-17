@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +42,7 @@ static int finish_alfred_push_data(struct globals *globals,
 				   struct alfred_push_data_v0 *push)
 {
 	int len, data_len;
+	bool new_entry_created;
 	struct alfred_data *data;
 	struct dataset *dataset;
 	uint8_t *pos;
@@ -57,6 +59,7 @@ static int finish_alfred_push_data(struct globals *globals,
 		if ((int)(data_len + sizeof(*data)) > len)
 			break;
 
+		new_entry_created = false;
 		dataset = hash_find(globals->data_hash, data);
 		if (!dataset) {
 			dataset = malloc(sizeof(*dataset));
@@ -71,12 +74,19 @@ static int finish_alfred_push_data(struct globals *globals,
 				free(dataset);
 				goto err;
 			}
+			new_entry_created = true;
 		}
 		/* don't overwrite our own data */
 		if (dataset->data_source == SOURCE_LOCAL)
 			goto skip_data;
 
 		clock_gettime(CLOCK_MONOTONIC, &dataset->last_seen);
+
+		/* check that data was changed */
+		if (new_entry_created ||
+		    dataset->data.header.length != data_len ||
+		    memcmp(dataset->buf, data->data, data_len) != 0)
+			changed_data_type(globals, data->header.type);
 
 		/* free old buffer */
 		if (dataset->buf) {

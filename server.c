@@ -23,6 +23,7 @@
 #include <inttypes.h>
 #include <net/ethernet.h>
 #include <net/if.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -136,6 +137,27 @@ int set_best_server(struct globals *globals)
 	return 0;
 }
 
+void changed_data_type(struct globals *globals, uint8_t arg)
+{
+	struct changed_data_type *data_type = NULL;
+
+	if (!globals->update_command)
+		return;
+
+	list_for_each_entry(data_type, &globals->changed_data_types, list) {
+		if (data_type->data_type == arg)
+			return;
+	}
+
+	data_type = malloc(sizeof(*data_type));
+	if (!data_type)
+		return;
+
+	data_type->data_type = arg;
+	list_add(&data_type->list, &globals->changed_data_types);
+	globals->changed_data_type_count++;
+}
+
 static int purge_data(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;
@@ -150,6 +172,8 @@ static int purge_data(struct globals *globals)
 		time_diff(&now, &dataset->last_seen, &diff);
 		if (diff.tv_sec < ALFRED_DATA_TIMEOUT)
 			continue;
+
+		changed_data_type(globals, dataset->data.header.type);
 
 		hash_remove_bucket(globals->data_hash, hashit);
 		free(dataset->buf);
@@ -259,6 +283,55 @@ static void check_if_sockets(struct globals *globals)
 		check_if_socket(interface);
 }
 
+static void execute_update_command(struct globals *globals)
+{
+	pid_t script_pid;
+	size_t command_len;
+	char *command;
+	struct changed_data_type *data_type, *is;
+	/* data type is uint8_t, so 255 is maximum (3 chars)
+	 * space for appending + terminating null byte
+	 */
+	char buf[5];
+
+	if (!globals->update_command || !globals->changed_data_type_count)
+		return;
+
+	/* length of script + 4 bytes per data type (space +3 chars)
+	 * + 1 for terminating null byte
+	 */
+	command_len = strlen(globals->update_command);
+	command_len += 4 * globals->changed_data_type_count + 1;
+	command = malloc(command_len);
+	if (!command)
+		return;
+
+	strncpy(command, globals->update_command, command_len - 1);
+	command[command_len - 1] = '\0';
+
+	list_for_each_entry_safe(data_type, is, &globals->changed_data_types,
+				 list) {
+		/* append the datatype to command line */
+		snprintf(buf, sizeof(buf), " %d", data_type->data_type);
+		strncat(command, buf, command_len - strlen(command) - 1);
+
+		/* clean the list */
+		list_del(&data_type->list);
+		free(data_type);
+	}
+	globals->changed_data_type_count = 0;
+
+	printf("executing: %s\n", command);
+
+	script_pid = fork();
+	if (script_pid == 0) {
+		system(command);
+		exit(0);
+	}
+
+	free(command);
+}
+
 int alfred_server(struct globals *globals)
 {
 	int maxsock, ret, recvs;
@@ -343,6 +416,7 @@ int alfred_server(struct globals *globals)
 		}
 		purge_data(globals);
 		check_if_sockets(globals);
+		execute_update_command(globals);
 	}
 
 	netsock_close_all(globals);

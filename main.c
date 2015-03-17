@@ -61,6 +61,7 @@ static void alfred_usage(void)
 	printf("\n");
 	printf("  -u, --unix-path [path]              path to unix socket used for client-server\n");
 	printf("                                      communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
+	printf("  -c, --update-command                command to call on data change\n");
 	printf("  -v, --version                       print the version\n");
 	printf("  -h, --help                          this help\n");
 	printf("\n");
@@ -153,6 +154,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"modeswitch",		required_argument,	NULL,	'M'},
 		{"change-interface",	required_argument,	NULL,	'I'},
 		{"unix-path",		required_argument,	NULL,	'u'},
+		{"update-command",	required_argument,	NULL,	'c'},
 		{"version",		no_argument,		NULL,	'v'},
 		{"verbose",		no_argument,		NULL,	'd'},
 		{NULL,			0,			NULL,	0},
@@ -174,10 +176,13 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->mesh_iface = "bat0";
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 	globals->verbose = 0;
+	globals->update_command = NULL;
+	INIT_LIST_HEAD(&globals->changed_data_types);
+	globals->changed_data_type_count = 0;
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:d", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -237,6 +242,9 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'd':
 			globals->verbose++;
 			break;
+		case 'c':
+			globals->update_command = optarg;
+			break;
 		case 'v':
 			printf("%s %s\n", argv[0], SOURCE_VERSION);
 			printf("A.L.F.R.E.D. - Almighty Lightweight Remote Fact Exchange Daemon\n");
@@ -250,6 +258,8 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		perror("could not register SIGPIPE handler");
+	if (signal(SIGCHLD, SIG_IGN) == SIG_ERR)
+		perror("could not register SIGCHLD handler");
 	return globals;
 }
 

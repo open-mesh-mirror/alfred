@@ -55,6 +55,11 @@ struct dataset {
 	uint8_t local_data;
 };
 
+struct changed_data_type {
+	uint8_t data_type;
+	struct list_head list;
+};
+
 struct transaction_packet {
 	struct alfred_push_data_v0 *push;
 	struct list_head list;
@@ -118,6 +123,10 @@ struct globals {
 	int unix_sock;
 	const char *unix_path;
 
+	const char *update_command;
+	struct list_head changed_data_types;
+	uint16_t changed_data_type_count; /* maximum is 256 */
+
 	struct timespec if_check;
 
 	struct hashtable_t *data_hash;
@@ -134,6 +143,8 @@ extern const struct in6_addr in6addr_localmcast;
 /* server.c */
 int alfred_server(struct globals *globals);
 int set_best_server(struct globals *globals);
+void changed_data_type(struct globals *globals, uint8_t arg);
+
 /* client.c */
 int alfred_client_request_data(struct globals *globals);
 int alfred_client_set_data(struct globals *globals);

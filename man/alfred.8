@@ -114,6 +114,10 @@ still keeping redundancy (by having multiple masters). Obviously, at least one
 master must be present in the network to let any data exchange happen. Also
 having all nodes in master mode is possible (for maximum decentrality and
 overhead).
+.TP
+\fB\-c\fP, \fB\-\-update-command\fP \fIcommand\fP
+Specify command to execute on data change. It will be called with data-type list
+as arguments.
 .
 .SH EXAMPLES
 Start an alfred server listening on bridge br0 (assuming that this bridge
