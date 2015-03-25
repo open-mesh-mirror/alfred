@@ -102,6 +102,7 @@ struct interface {
 	uint32_t scope_id;
 	char *interface;
 	int netsock;
+	int netsock_mcast;
 
 	struct hashtable_t *server_hash;
 
@@ -151,7 +152,8 @@ int alfred_client_set_data(struct globals *globals);
 int alfred_client_modeswitch(struct globals *globals);
 int alfred_client_change_interface(struct globals *globals);
 /* recv.c */
-int recv_alfred_packet(struct globals *globals, struct interface *interface);
+int recv_alfred_packet(struct globals *globals, struct interface *interface,
+		       int recv_sock);
 struct transaction_head *
 transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id);
 struct transaction_head *

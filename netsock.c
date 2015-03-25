@@ -84,6 +84,8 @@ void netsock_close_all(struct globals *globals)
 	list_for_each_entry_safe(interface, is, &globals->interfaces, list) {
 		if (interface->netsock >= 0)
 			close(interface->netsock);
+		if (interface->netsock_mcast >= 0)
+			close(interface->netsock_mcast);
 		list_del(&interface->list);
 		hash_delete(interface->server_hash, free);
 		free(interface->interface);
@@ -144,6 +146,7 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 		interface->scope_id = 0;
 		interface->interface = NULL;
 		interface->netsock = -1;
+		interface->netsock_mcast = -1;
 		interface->server_hash = NULL;
 
 		interface->interface = strdup(token);
@@ -210,14 +213,24 @@ out:
 static int netsock_open(struct interface *interface)
 {
 	int sock;
-	struct sockaddr_in6 sin6;
+	int sock_mc;
+	struct sockaddr_in6 sin6, sin6_mc;
+	struct ipv6_mreq mreq;
 	struct ifreq ifr;
 	int ret;
 
 	interface->netsock = -1;
+	interface->netsock_mcast = -1;
 
 	sock = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock  < 0) {
+		perror("can't open socket");
+		return -1;
+	}
+
+	sock_mc = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock_mc  < 0) {
+		close(sock);
 		perror("can't open socket");
 		return -1;
 	}
@@ -232,12 +245,6 @@ static int netsock_open(struct interface *interface)
 
 	interface->scope_id = ifr.ifr_ifindex;
 
-	memset(&sin6, 0, sizeof(sin6));
-	sin6.sin6_port = htons(ALFRED_PORT);
-	sin6.sin6_family = AF_INET6;
-	sin6.sin6_addr = in6addr_any;
-	sin6.sin6_scope_id = ifr.ifr_ifindex;
-
 	if (ioctl(sock, SIOCGIFHWADDR, &ifr) == -1) {
 		perror("can't get MAC address");
 		goto err;
@@ -246,8 +253,28 @@ static int netsock_open(struct interface *interface)
 	memcpy(&interface->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
 	mac_to_ipv6(&interface->hwaddr, &interface->address);
 
+	memset(&sin6, 0, sizeof(sin6));
+	sin6.sin6_port = htons(ALFRED_PORT);
+	sin6.sin6_family = AF_INET6;
+	memcpy(&sin6.sin6_addr, &interface->address, sizeof(sin6.sin6_addr));
+	sin6.sin6_scope_id = interface->scope_id;
+
+	memset(&sin6_mc, 0, sizeof(sin6_mc));
+	sin6_mc.sin6_port = htons(ALFRED_PORT);
+	sin6_mc.sin6_family = AF_INET6;
+	memcpy(&sin6_mc.sin6_addr, &in6addr_localmcast,
+	       sizeof(sin6_mc.sin6_addr));
+	sin6_mc.sin6_scope_id = interface->scope_id;
+
 	enable_raw_bind_capability(1);
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
+		       strlen(interface->interface) + 1)) {
+		perror("can't bind to device");
+		goto err;
+	}
+
+	if (setsockopt(sock_mc, SOL_SOCKET, SO_BINDTODEVICE,
+		       interface->interface,
 		       strlen(interface->interface) + 1)) {
 		perror("can't bind to device");
 		goto err;
@@ -256,6 +283,21 @@ static int netsock_open(struct interface *interface)
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
 		perror("can't bind");
+		goto err;
+	}
+
+	if (bind(sock_mc, (struct sockaddr *)&sin6_mc, sizeof(sin6_mc)) < 0) {
+		perror("can't bind");
+		goto err;
+	}
+
+	memcpy(&mreq.ipv6mr_multiaddr, &in6addr_localmcast,
+	       sizeof(mreq.ipv6mr_multiaddr));
+	mreq.ipv6mr_interface = interface->scope_id;
+
+	if (setsockopt(sock_mc, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+		       &mreq, sizeof(mreq))) {
+		perror("can't add multicast membership");
 		goto err;
 	}
 
@@ -271,11 +313,25 @@ static int netsock_open(struct interface *interface)
 		goto err;
 	}
 
+	ret = fcntl(sock_mc, F_GETFL, 0);
+	if (ret < 0) {
+		perror("failed to get file status flags");
+		goto err;
+	}
+
+	ret = fcntl(sock_mc, F_SETFL, ret | O_NONBLOCK);
+	if (ret < 0) {
+		perror("failed to set file status flags");
+		goto err;
+	}
+
 	interface->netsock = sock;
+	interface->netsock_mcast = sock_mc;
 
 	return 0;
 err:
 	close(sock);
+	close(sock_mc);
 	return -1;
 }
 
@@ -314,6 +370,12 @@ int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock)
 			if (maxsock < interface->netsock)
 				maxsock = interface->netsock;
 		}
+
+		if (interface->netsock_mcast >= 0) {
+			FD_SET(interface->netsock_mcast, fds);
+			if (maxsock < interface->netsock_mcast)
+				maxsock = interface->netsock_mcast;
+		}
 	}
 
 	return maxsock;
@@ -324,12 +386,22 @@ void netsock_check_error(struct globals *globals, fd_set *errfds)
 	struct interface *interface;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
-		if (interface->netsock >= 0 &&
-		    FD_ISSET(interface->netsock, errfds)) {
-			fprintf(stderr, "Error on netsock detected\n");
+		if ((interface->netsock < 0 ||
+		     !FD_ISSET(interface->netsock, errfds)) &&
+		    (interface->netsock_mcast < 0 ||
+		     !FD_ISSET(interface->netsock_mcast, errfds)))
+			continue;
+
+		fprintf(stderr, "Error on netsock detected\n");
+
+		if (interface->netsock >= 0)
 			close(interface->netsock);
-			interface->netsock = -1;
-		}
+
+		if (interface->netsock_mcast >= 0)
+			close(interface->netsock_mcast);
+
+		interface->netsock = -1;
+		interface->netsock_mcast = -1;
 	}
 }
 
@@ -341,7 +413,15 @@ int netsock_receive_packet(struct globals *globals, fd_set *fds)
 	list_for_each_entry(interface, &globals->interfaces, list) {
 		if (interface->netsock >= 0 &&
 		    FD_ISSET(interface->netsock, fds)) {
-			recv_alfred_packet(globals, interface);
+			recv_alfred_packet(globals, interface,
+					   interface->netsock);
+			recvs++;
+		}
+
+		if (interface->netsock_mcast >= 0 &&
+		    FD_ISSET(interface->netsock_mcast, fds)) {
+			recv_alfred_packet(globals, interface,
+					   interface->netsock_mcast);
 			recvs++;
 		}
 	}

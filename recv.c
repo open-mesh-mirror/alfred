@@ -379,7 +379,8 @@ static int process_alfred_status_txend(struct globals *globals,
 	return 0;
 }
 
-int recv_alfred_packet(struct globals *globals, struct interface *interface)
+int recv_alfred_packet(struct globals *globals, struct interface *interface,
+		       int recv_sock)
 {
 	uint8_t buf[MAX_PAYLOAD];
 	ssize_t length;
@@ -391,7 +392,7 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface)
 		return -1;
 
 	sourcelen = sizeof(source);
-	length = recvfrom(interface->netsock, buf, sizeof(buf), 0,
+	length = recvfrom(recv_sock, buf, sizeof(buf), 0,
 			  (struct sockaddr *)&source, &sourcelen);
 	if (length <= 0) {
 		perror("read from network socket failed");

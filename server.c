@@ -262,7 +262,9 @@ static void check_if_socket(struct interface *interface)
 
 close:
 	close(interface->netsock);
+	close(interface->netsock_mcast);
 	interface->netsock = -1;
+	interface->netsock_mcast = -1;
 	close(sock);
 }
 
