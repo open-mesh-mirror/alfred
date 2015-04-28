@@ -1,3 +1,16 @@
+alfred 2015.0:
+
+ * add support to call commands after data was updated
+ * automatic reduction of process capabilities when not needed anymore
+ * allow printing of the data version number in the alfred client mode
+ * various code cleanups
+ * bugs squashed:
+   - update of the version number when data was updated with different
+     version number
+   - tighten size check on received packet
+
+ -- Tue, 28 Apr 2015 20:39:51 +0200
+
 alfred 2014.4.0:
 
  * add support for multiple interfaces per master
