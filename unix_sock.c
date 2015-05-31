@@ -108,7 +108,7 @@ static int unix_sock_add_data(struct globals *globals,
 
 	len = ntohs(push->header.length);
 
-	if (len < (int)(sizeof(*push) + sizeof(push->header)))
+	if (len < (int)(sizeof(*push) - sizeof(push->header)))
 		goto err;
 
 	/* subtract rest of push header */
