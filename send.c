@@ -91,6 +91,11 @@ int push_data(struct globals *globals, struct interface *interface,
 			total_length = 0;
 		}
 
+		/* still too large? - should never happen */
+		if (total_length + dataset->data.header.length + sizeof(*data) >
+		    MAX_PAYLOAD - sizeof(*push))
+			continue;
+
 		data = (struct alfred_data *)
 		       (buf + sizeof(*push) + total_length);
 		memcpy(data, &dataset->data, sizeof(*data));
