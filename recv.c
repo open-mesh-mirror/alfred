@@ -188,6 +188,8 @@ static int process_alfred_push_data(struct globals *globals,
 		goto err;
 
 	len = ntohs(push->header.length);
+	if (len < (int)(sizeof(*push) - sizeof(push->header)))
+		goto err;
 
 	search.server_addr = mac;
 	search.id = ntohs(push->tx.id);
