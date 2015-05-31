@@ -82,6 +82,10 @@ int push_data(struct globals *globals, struct interface *interface,
 		 * first */
 		if (total_length + dataset->data.header.length + sizeof(*data) >
 		    MAX_PAYLOAD - sizeof(*push)) {
+			/* is there any data to send? */
+			if (total_length == 0)
+				continue;
+
 			tlv_length = total_length;
 			tlv_length += sizeof(*push) - sizeof(push->header);
 			push->header.length = htons(tlv_length);
