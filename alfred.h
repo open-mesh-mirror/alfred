@@ -25,6 +25,7 @@
 
 #include <net/ethernet.h>
 #include <netinet/in.h>
+#include <netinet/udp.h>
 #include <stdint.h>
 #include <time.h>
 #include <sys/select.h>
@@ -137,7 +138,7 @@ struct globals {
 #define debugMalloc(size, num)	malloc(size)
 #define debugFree(ptr, num)	free(ptr)
 
-#define MAX_PAYLOAD ((1 << 16) - 1)
+#define MAX_PAYLOAD ((1 << 16) - 1 - sizeof(struct udphdr))
 
 extern const struct in6_addr in6addr_localmcast;
 
