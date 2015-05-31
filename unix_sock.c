@@ -182,6 +182,11 @@ static int unix_sock_req_data_reply(struct globals *globals, int client_sock,
 		if (dataset->data.header.type != requested_type)
 			continue;
 
+		/* too large? - should never happen */
+		if (dataset->data.header.length + sizeof(*data) >
+		    MAX_PAYLOAD - sizeof(*push))
+			continue;
+
 		data = push->data;
 		memcpy(data, &dataset->data, sizeof(*data));
 		data->header.length = htons(data->header.length);
