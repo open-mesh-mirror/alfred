@@ -1,3 +1,12 @@
+alfred 2015.1:
+
+ * add support to run on interfaces with multiple link-local addresses
+ * various code cleanups
+ * bugs squashed:
+   - reduce of maximum payload size to always fit into UDP datagrams
+
+ -- Tue, 04 Aug 2015 14:59:10 +0200
+
 alfred 2015.0:
 
  * add support to call commands after data was updated
