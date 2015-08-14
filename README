@@ -29,8 +29,9 @@ alfred depends on:
  * librt (usually part of libc)
  * IPv6 support in the kernel/host system
 
-and if distributing GPS information:
- * libgps
+and optionally:
+ * libgps - if you want to distribute GPS information
+ * libcap - if you want extra security by dropping unneeded privileges
 
 To compile alfred, simply type:
 
@@ -53,6 +54,10 @@ CONFIG_ALFRED_GPSD=n:
  $ make CONFIG_ALFRED_GPSD=n
  $ make CONFIG_ALFRED_GPSD=n install
 
+If don't want to compile with libcap to drop privileges, use:
+
+ $ make CONFIG_ALFRED_CAPABILITIES=n
+ $ make CONFIG_ALFRED_CAPABILITIES=n install
 
 Usage
 -----
