@@ -50,13 +50,13 @@ static void alfred_usage(void)
 	printf("  -I, --change-interface [interface]  change to the specified interface(s)\n");
 	printf("\n");
 	printf("server mode options:\n");
-	printf("  -i, --interface                     specify the interface (or comma separated list of interfaes) to listen on\n");
+	printf("  -i, --interface                     specify the interface (or comma separated list of interfaces) to listen on\n");
 	printf("  -b                                  specify the batman-adv interface\n");
 	printf("                                      configured on the system (default: bat0)\n");
 	printf("                                      use 'none' to disable the batman-adv\n");
 	printf("                                      based best server selection\n");
 	printf("  -m, --master                        start up the daemon in master mode, which\n");
-	printf("                                      accepts data from slaves and synces it with\n");
+	printf("                                      accepts data from slaves and syncs it with\n");
 	printf("                                      other masters\n");
 	printf("\n");
 	printf("  -u, --unix-path [path]              path to unix socket used for client-server\n");

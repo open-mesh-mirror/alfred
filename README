@@ -74,7 +74,7 @@ list of options, run alfred -h):
                               the system (default: bat0). use 'none' to disable
                               the batman-adv based best server selection
   -m, --master                start up the daemon in master mode, which
-                              accepts data from slaves and synces it with
+                              accepts data from slaves and syncs it with
                               other masters
 
 The -b option is optional, and only needed if you run alfred on a batman-adv
