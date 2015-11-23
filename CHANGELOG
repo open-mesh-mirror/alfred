@@ -1,3 +1,10 @@
+alfred 2015.2:
+
+ * mention libcap in the README
+ * Fix typos
+
+ -- Mon, 23 Nov 2015 20:35:20 +0100
+
 alfred 2015.1:
 
  * add support to run on interfaces with multiple link-local addresses
