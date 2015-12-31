@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2015  B.A.T.M.A.N. contributors:
+ * Copyright (C) 2013-2016  B.A.T.M.A.N. contributors:
  *
  * Andrew Lunn, Simon Wunderlich
  *
