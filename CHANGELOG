@@ -1,3 +1,9 @@
+alfred 2016.0:
+
+ * various code and documentation cleanups
+
+ -- Tue, 19 Jan 2016 16:44:26 +0100
+
 alfred 2015.2:
 
  * mention libcap in the README
