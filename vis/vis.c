@@ -325,7 +325,7 @@ static int parse_orig_list(struct globals *globals)
 	char path[1024];
 	struct vis_list_entry *v_entry;
 
-	snprintf(path, sizeof(path), "/sys/kernel/debug/batman_adv/%s/originators", globals->interface);
+	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" "originators", globals->interface, path, sizeof(path));
 	fbuf = read_file(path);
 	if (!fbuf)
 		return -1;
