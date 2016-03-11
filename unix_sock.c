@@ -97,6 +97,7 @@ static int unix_sock_add_data(struct globals *globals,
 			      struct alfred_push_data_v0 *push,
 			      int client_sock)
 {
+	static const char zero[ETH_ALEN] = { 0 };
 	struct alfred_data *data;
 	struct dataset *dataset;
 	int len, data_len, ret = -1;
@@ -119,7 +120,13 @@ static int unix_sock_add_data(struct globals *globals,
 
 	data = push->data;
 	data_len = ntohs(data->header.length);
-	memcpy(data->source, &interface->hwaddr, sizeof(interface->hwaddr));
+
+	/* clients should set the source mac to 00:00:00:00:00:00
+	 * to make the server set the source for them
+	 */
+	if (memcmp(zero, data->source, sizeof(data->source)) == 0)
+		memcpy(data->source, &interface->hwaddr,
+		       sizeof(interface->hwaddr));
 
 	if ((int)(data_len + sizeof(*data)) > len)
 		goto err;
