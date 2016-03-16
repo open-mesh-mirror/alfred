@@ -94,15 +94,8 @@ int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
 
 int batadv_interface_check(const char *mesh_iface)
 {
-	char *debugfs_mnt;
 	char full_path[MAX_PATH + 1];
 	FILE *f;
-
-	debugfs_mnt = debugfs_mount(NULL);
-	if (!debugfs_mnt) {
-		fprintf(stderr, "Could not find debugfs path\n");
-		return -1;
-	}
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
 			  mesh_iface, full_path, sizeof(full_path));
@@ -138,7 +131,6 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 		tg_originator,
 	} pos;
 	char full_path[MAX_PATH + 1];
-	char *debugfs_mnt;
 	static struct ether_addr in_mac;
 	struct ether_addr *mac_result, *mac_tmp;
 	FILE *f = NULL;
@@ -149,10 +141,6 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 
 	memcpy(&in_mac, mac, sizeof(in_mac));
 	mac_result = &in_mac;
-
-	debugfs_mnt = debugfs_mount(NULL);
-	if (!debugfs_mnt)
-		goto out;
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
 			  mesh_iface, full_path, sizeof(full_path));
@@ -220,7 +208,6 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 		orig_tqvalue,
 	} pos;
 	char full_path[MAX_PATH + 1];
-	char *debugfs_mnt;
 	static struct ether_addr in_mac;
 	struct ether_addr *mac_tmp;
 	FILE *f = NULL;
@@ -231,10 +218,6 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 	uint8_t tq = 0;
 
 	memcpy(&in_mac, mac, sizeof(in_mac));
-
-	debugfs_mnt = debugfs_mount(NULL);
-	if (!debugfs_mnt)
-		goto out;
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_ORIGINATORS,
 			  mesh_iface, full_path, sizeof(full_path));
