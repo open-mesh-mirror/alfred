@@ -26,6 +26,7 @@
 #include <net/ethernet.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 #include <sys/select.h>
@@ -196,3 +197,4 @@ int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff);
 void time_random_seed(void);
 uint16_t get_random_id(void);
+bool is_valid_ether_addr(uint8_t *addr);

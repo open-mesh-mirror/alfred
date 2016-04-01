@@ -19,6 +19,8 @@
  *
  */
 
+#include <netinet/ether.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -59,4 +61,17 @@ void time_random_seed(void)
 uint16_t get_random_id(void)
 {
 	return random();
+}
+
+bool is_valid_ether_addr(uint8_t addr[ETH_ALEN])
+{
+	/* multicast address */
+	if (addr[0] & 0x01)
+		return false;
+
+	/* 00:00:00:00:00:00 */
+	if ((addr[0] | addr[1] | addr[2] | addr[3] | addr[4] | addr[5]) == 0)
+		return false;
+
+	return true;
 }

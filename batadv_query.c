@@ -19,6 +19,7 @@
  *
  */
 
+#include "alfred.h"
 #include "batadv_query.h"
 #include <errno.h>
 #include <net/ethernet.h>
@@ -84,6 +85,9 @@ int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
 	mac->ether_addr_octet[3] = addr->s6_addr[13];
 	mac->ether_addr_octet[4] = addr->s6_addr[14];
 	mac->ether_addr_octet[5] = addr->s6_addr[15];
+
+	if (!is_valid_ether_addr(mac->ether_addr_octet))
+		return -EINVAL;
 
 	return 0;
 }
