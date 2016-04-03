@@ -122,10 +122,18 @@ static int unix_sock_add_data(struct globals *globals,
 
 	/* clients should set the source mac to 00:00:00:00:00:00
 	 * to make the server set the source for them
+	 *
+	 * Only alfred in master mode can accept a user defined
+	 * source addresses. Otherwise the data would not be
+	 * synced between master servers.
 	 */
-	if (!is_valid_ether_addr(data->source))
-		memcpy(data->source, &interface->hwaddr,
-		       sizeof(interface->hwaddr));
+	if (is_valid_ether_addr(data->source)) {
+		if (memcmp(data->source, &interface->hwaddr, ETH_ALEN) != 0 &&
+		    globals->opmode != OPMODE_MASTER)
+			goto err;
+	} else {
+		memcpy(data->source, &interface->hwaddr, ETH_ALEN);
+	}
 
 	if ((int)(data_len + sizeof(*data)) > len)
 		goto err;
