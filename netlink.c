@@ -280,3 +280,88 @@ int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
 
 	return 0;
 }
+
+static const int get_tq_netlink_mandatory[] = {
+	BATADV_ATTR_ORIG_ADDRESS,
+	BATADV_ATTR_TQ,
+};
+
+struct get_tq_netlink_opts {
+	struct ether_addr mac;
+	uint8_t tq;
+	bool found;
+	struct nlquery_opts query_opts;
+};
+
+static int get_tq_netlink_cb(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *attrs[BATADV_ATTR_MAX+1];
+	struct nlmsghdr *nlh = nlmsg_hdr(msg);
+	struct nlquery_opts *query_opts = arg;
+	struct get_tq_netlink_opts *opts;
+	struct genlmsghdr *ghdr;
+	uint8_t *orig;
+	uint8_t tq;
+
+	opts = container_of(query_opts, struct get_tq_netlink_opts,
+			    query_opts);
+
+	if (!genlmsg_valid_hdr(nlh, 0))
+		return NL_OK;
+
+	ghdr = nlmsg_data(nlh);
+
+	if (ghdr->cmd != BATADV_CMD_GET_ORIGINATORS)
+		return NL_OK;
+
+	if (nla_parse(attrs, BATADV_ATTR_MAX, genlmsg_attrdata(ghdr, 0),
+		      genlmsg_len(ghdr), batadv_netlink_policy)) {
+		return NL_OK;
+	}
+
+	if (missing_mandatory_attrs(attrs, get_tq_netlink_mandatory,
+				    ARRAY_SIZE(get_tq_netlink_mandatory)))
+		return NL_OK;
+
+	orig = nla_data(attrs[BATADV_ATTR_ORIG_ADDRESS]);
+	tq = nla_get_u8(attrs[BATADV_ATTR_TQ]);
+
+	if (!attrs[BATADV_ATTR_FLAG_BEST])
+		return NL_OK;
+
+	if (memcmp(&opts->mac, orig, ETH_ALEN) != 0)
+		return NL_OK;
+
+	opts->tq = tq;
+	opts->found = true;
+	opts->query_opts.err = 0;
+
+	return NL_STOP;
+}
+
+int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
+		   uint8_t *tq)
+{
+	struct get_tq_netlink_opts opts = {
+		.tq = 0,
+		.found = false,
+		.query_opts = {
+			.err = 0,
+		},
+	};
+	int ret;
+
+	memcpy(&opts.mac, mac, ETH_ALEN);
+
+	ret = netlink_query_common(mesh_iface,  BATADV_CMD_GET_ORIGINATORS,
+			           get_tq_netlink_cb, &opts.query_opts);
+	if (ret < 0)
+		return ret;
+
+	if (!opts.found)
+		return -ENOENT;
+
+	*tq = opts.tq;
+
+	return 0;
+}

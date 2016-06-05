@@ -366,13 +366,19 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 {
 	struct ether_addr in_mac;
 	uint8_t tq = 0;
+	int ret;
 
 	/* input mac has to be copied because it could be in the shared
 	 * ether_aton buffer
 	 */
 	memcpy(&in_mac, mac, sizeof(in_mac));
 
-	get_tq_debugfs(mesh_iface, &in_mac, &tq);
+	enable_net_admin_capability(1);
+	ret = get_tq_netlink(mesh_iface, &in_mac, &tq);
+	enable_net_admin_capability(0);
+
+	if (ret == -EOPNOTSUPP)
+		get_tq_debugfs(mesh_iface, &in_mac, &tq);
 
 	return tq;
 }
