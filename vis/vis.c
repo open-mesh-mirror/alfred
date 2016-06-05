@@ -125,9 +125,10 @@ static int get_if_mac(char *ifname, uint8_t *mac)
 	return 0;
 }
 
-static int get_if_index(struct globals *globals, char *ifname)
+static int get_if_index_byname(struct globals *globals, char *ifname)
 {
 	struct iface_list_entry *i_entry;
+	int devindex;
 	int i;
 
 	if (!ifname)
@@ -139,6 +140,11 @@ static int get_if_index(struct globals *globals, char *ifname)
 			return i;
 		i++;
 	}
+
+	devindex = if_nametoindex(ifname);
+	if (!devindex)
+		return -1;
+
 	i_entry = malloc(sizeof(*i_entry));
 	if (!i_entry)
 		return -1;
@@ -148,6 +154,7 @@ static int get_if_index(struct globals *globals, char *ifname)
 		return -1;
 	}
 
+	i_entry->devindex = devindex;
 	strncpy(i_entry->name, ifname, sizeof(i_entry->name));
 	/* just to be safe ... */
 	i_entry->name[sizeof(i_entry->name) - 1] = 0;
@@ -301,7 +308,7 @@ static int register_interfaces(struct globals *globals)
 			*content_newline = '\0';
 
 		if (strcmp(file_content, "active") == 0)
-			get_if_index(globals, iface_dir->d_name);
+			get_if_index_byname(globals, iface_dir->d_name);
 
 free_line:
 		free(file_content);
@@ -364,7 +371,7 @@ static int parse_orig_list(struct globals *globals)
 				if (!mac)
 					continue;
 
-				ifindex = get_if_index(globals, iface);
+				ifindex = get_if_index_byname(globals, iface);
 				if (ifindex < 0)
 					continue;
 

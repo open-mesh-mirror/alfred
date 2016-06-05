@@ -77,6 +77,7 @@ struct vis_v1 {
 struct iface_list_entry {
 	char name[256];
 	uint8_t mac[ETH_ALEN];
+	int devindex;
 	struct list_head list;
 };
 
