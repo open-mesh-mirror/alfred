@@ -24,6 +24,29 @@
 
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
+#include <stddef.h>
+
+struct ether_addr;
+
+struct nlquery_opts {
+	int err;
+};
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
+
+#ifndef container_of
+#define container_of(ptr, type, member) __extension__ ({ \
+	const __typeof__(((type *)0)->member) *__pmember = (ptr); \
+	(type *)((char *)__pmember - offsetof(type, member)); })
+#endif
+
+int netlink_query_common(const char *mesh_iface, uint8_t nl_cmd,
+			 nl_recvmsg_msg_cb_t callback,
+			 struct nlquery_opts *query_opts);
+int missing_mandatory_attrs(struct nlattr *attrs[],  const int mandatory[],
+			    size_t num);
+int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
+			  struct ether_addr *mac_out);
 
 extern struct nla_policy batadv_netlink_policy[];
 

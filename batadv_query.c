@@ -33,11 +33,52 @@
 #include <sys/capability.h>
 #endif
 #include <sys/types.h>
+
+#include "netlink.h"
 #include "debugfs.h"
 
 #define DEBUG_BATIF_PATH_FMT "%s/batman_adv/%s"
 #define DEBUG_TRANSTABLE_GLOBAL "transtable_global"
 #define DEBUG_ORIGINATORS "originators"
+
+static int enable_net_admin_capability(int enable)
+{
+	int ret = 0;
+
+#ifdef CONFIG_ALFRED_CAPABILITIES
+	cap_t cap_cur;
+	cap_flag_value_t cap_flag;
+	cap_value_t cap_net_admin = CAP_NET_ADMIN;
+
+	if (enable)
+		cap_flag = CAP_SET;
+	else
+		cap_flag = CAP_CLEAR;
+
+	cap_cur = cap_get_proc();
+	if (!cap_cur) {
+		perror("cap_get_proc");
+		return -1;
+	}
+
+	ret = cap_set_flag(cap_cur, CAP_EFFECTIVE, 1, &cap_net_admin, cap_flag);
+	if (ret < 0) {
+		perror("cap_set_flag");
+		goto out;
+	}
+
+	ret = cap_set_proc(cap_cur);
+	if (ret < 0) {
+		perror("cap_set_proc");
+		goto out;
+	}
+
+out:
+	cap_free(cap_cur);
+#endif
+
+	return ret;
+}
 
 int mac_to_ipv6(const struct ether_addr *mac, struct in6_addr *addr)
 {
@@ -212,6 +253,7 @@ struct ether_addr *translate_mac(const char *mesh_iface,
 	struct ether_addr in_mac;
 	static struct ether_addr out_mac;
 	struct ether_addr *mac_result;
+	int ret;
 
 	/* input mac has to be copied because it could be in the shared
 	 * ether_aton buffer
@@ -220,7 +262,12 @@ struct ether_addr *translate_mac(const char *mesh_iface,
 	memcpy(&out_mac, mac, sizeof(out_mac));
 	mac_result = &out_mac;
 
-	translate_mac_debugfs(mesh_iface, &in_mac, mac_result);
+	enable_net_admin_capability(1);
+	ret = translate_mac_netlink(mesh_iface, &in_mac, mac_result);
+	enable_net_admin_capability(0);
+
+	if (ret == -EOPNOTSUPP)
+		translate_mac_debugfs(mesh_iface, &in_mac, mac_result);
 
 	return mac_result;
 }
