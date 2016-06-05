@@ -257,6 +257,7 @@ static int register_interfaces(struct globals *globals)
 	DIR *iface_base_dir;
 	struct dirent *iface_dir;
 	char *path_buff, *file_content;
+	char *content_newline;
 
 	path_buff = malloc(PATH_BUFF_LEN);
 	if (!path_buff) {
@@ -294,6 +295,10 @@ static int register_interfaces(struct globals *globals)
 		file_content = read_file(path_buff);
 		if (!file_content)
 			continue;
+
+		content_newline = strstr(file_content, "\n");
+		if (content_newline)
+			*content_newline = '\0';
 
 		if (strcmp(file_content, "active") == 0)
 			get_if_index(globals, iface_dir->d_name);
