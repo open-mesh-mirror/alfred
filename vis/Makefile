@@ -21,6 +21,7 @@
 # batadv-vis build
 BINARY_NAME = batadv-vis
 OBJ += debugfs.o
+OBJ += netlink.o
 OBJ += vis.o
 MANPAGE = man/batadv-vis.8
 
@@ -58,6 +59,35 @@ REVISION= $(shell	if [ -d ../.git ]; then \
 ifneq ($(REVISION),)
 CPPFLAGS += -DSOURCE_VERSION=\"$(REVISION)\"
 endif
+
+ifeq ($(origin PKG_CONFIG), undefined)
+  PKG_CONFIG = pkg-config
+  ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
+    $(error $(PKG_CONFIG) not found)
+  endif
+endif
+
+ifeq ($(origin LIBNL_CFLAGS) $(origin LIBNL_LDLIBS), undefined undefined)
+  LIBNL_NAME ?= libnl-3.0
+  ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBNL_NAME) 2>/dev/null),)
+    $(error No $(LIBNL_NAME) development libraries found!)
+  endif
+  LIBNL_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBNL_NAME))
+  LIBNL_LDLIBS +=  $(shell $(PKG_CONFIG) --libs $(LIBNL_NAME))
+endif
+CFLAGS += $(LIBNL_CFLAGS)
+LDLIBS += $(LIBNL_LDLIBS)
+
+ifeq ($(origin LIBNL_GENL_CFLAGS) $(origin LIBNL_GENL_LDLIBS), undefined undefined)
+  LIBNL_GENL_NAME ?= libnl-genl-3.0
+  ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBNL_GENL_NAME) 2>/dev/null),)
+    $(error No $(LIBNL_GENL_NAME) development libraries found!)
+  endif
+  LIBNL_GENL_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBNL_GENL_NAME))
+  LIBNL_GENL_LDLIBS += $(shell $(PKG_CONFIG) --libs $(LIBNL_GENL_NAME))
+endif
+CFLAGS += $(LIBNL_GENL_CFLAGS)
+LDLIBS += $(LIBNL_GENL_LDLIBS)
 
 # default target
 all: $(BINARY_NAME)

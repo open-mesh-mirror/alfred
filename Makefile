@@ -25,6 +25,7 @@ OBJ += client.o
 OBJ += debugfs.o
 OBJ += hash.o
 OBJ += main.o
+OBJ += netlink.o
 OBJ += netsock.o
 OBJ += recv.o
 OBJ += send.o
@@ -83,14 +84,36 @@ ifneq ($(CONFIG_ALFRED_GPSD),n)
 	GPSD_INSTALL=gpsd-install
 endif
 
-ifneq ($(CONFIG_ALFRED_CAPABILITIES),n)
-  ifeq ($(origin PKG_CONFIG), undefined)
-    PKG_CONFIG = pkg-config
-    ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
-      $(error $(PKG_CONFIG) not found)
-    endif
+ifeq ($(origin PKG_CONFIG), undefined)
+  PKG_CONFIG = pkg-config
+  ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
+    $(error $(PKG_CONFIG) not found)
   endif
+endif
 
+ifeq ($(origin LIBNL_CFLAGS) $(origin LIBNL_LDLIBS), undefined undefined)
+  LIBNL_NAME ?= libnl-3.0
+  ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBNL_NAME) 2>/dev/null),)
+    $(error No $(LIBNL_NAME) development libraries found!)
+  endif
+  LIBNL_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBNL_NAME))
+  LIBNL_LDLIBS +=  $(shell $(PKG_CONFIG) --libs $(LIBNL_NAME))
+endif
+CFLAGS += $(LIBNL_CFLAGS)
+LDLIBS += $(LIBNL_LDLIBS)
+
+ifeq ($(origin LIBNL_GENL_CFLAGS) $(origin LIBNL_GENL_LDLIBS), undefined undefined)
+  LIBNL_GENL_NAME ?= libnl-genl-3.0
+  ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBNL_GENL_NAME) 2>/dev/null),)
+    $(error No $(LIBNL_GENL_NAME) development libraries found!)
+  endif
+  LIBNL_GENL_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(LIBNL_GENL_NAME))
+  LIBNL_GENL_LDLIBS += $(shell $(PKG_CONFIG) --libs $(LIBNL_GENL_NAME))
+endif
+CFLAGS += $(LIBNL_GENL_CFLAGS)
+LDLIBS += $(LIBNL_GENL_LDLIBS)
+
+ifneq ($(CONFIG_ALFRED_CAPABILITIES),n)
   ifeq ($(origin LIBCAP_CFLAGS) $(origin LIBCAP_LDLIBS), undefined undefined)
     LIBCAP_NAME ?= libcap
     ifeq ($(shell $(PKG_CONFIG) --modversion $(LIBCAP_NAME) 2>/dev/null),)

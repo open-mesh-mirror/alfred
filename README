@@ -28,6 +28,8 @@ Compilation
 alfred depends on:
  * librt (usually part of libc)
  * IPv6 support in the kernel/host system
+ * libnl-3 - support for netlink sockets
+ * libnl-3-genl - support for generic netlink messages
 
 and optionally:
  * libgps - if you want to distribute GPS information
