@@ -272,7 +272,8 @@ struct ether_addr *translate_mac(const char *mesh_iface,
 	return mac_result;
 }
 
-uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
+static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
+			  uint8_t *tq)
 {
 	enum {
 		orig_mac,
@@ -288,7 +289,7 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 	char *line = NULL;
 	char *input, *saveptr, *token;
 	int line_invalid;
-	uint8_t tq = 0;
+	bool found = false;
 
 	memcpy(&in_mac, mac, sizeof(in_mac));
 
@@ -297,7 +298,7 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 
 	f = fopen(full_path, "r");
 	if (!f)
-		goto out;
+		return -EOPNOTSUPP;
 
 	while (getline(&line, &len, f) != -1) {
 		line_invalid = 0;
@@ -338,7 +339,8 @@ uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
 					line_invalid = 1;
 				} else {
 					token[strlen(token) - 1] = '\0';
-					tq = strtol(token, NULL, 10);
+					*tq = strtol(token, NULL, 10);
+					found = true;
 					goto out;
 				}
 				break;
@@ -353,5 +355,24 @@ out:
 	if (f)
 		fclose(f);
 	free(line);
+
+	if (found)
+		return 0;
+	else
+		return -ENOENT;
+}
+
+uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
+{
+	struct ether_addr in_mac;
+	uint8_t tq = 0;
+
+	/* input mac has to be copied because it could be in the shared
+	 * ether_aton buffer
+	 */
+	memcpy(&in_mac, mac, sizeof(in_mac));
+
+	get_tq_debugfs(mesh_iface, &in_mac, &tq);
+
 	return tq;
 }
