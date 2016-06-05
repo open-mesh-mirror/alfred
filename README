@@ -277,11 +277,11 @@ Operations requiring special capabilities:
  * accessing the debugfs filesystem
 
 The first operation can still be executed when the admin grants the special
-capability CAP_NET_RAW to anyone executing the alfred binary. The unix socket
-can also be moved using the parameter '-u' to a different directory which can
-be accessed by the user.
+capability CAP_NET_RAW+CAP_NET_ADMIN to anyone executing the alfred binary.
+The unix socket can also be moved using the parameter '-u' to a different
+directory which can be accessed by the user.
 
- $ sudo setcap cap_net_raw+ep alfred
+ $ sudo setcap cap_net_admin,cap_net_raw+ep alfred
  $ ./alfred -u alfred.sock -i eth0
 
 The user running alfred must still be in a group which is allowed to access

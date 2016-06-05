@@ -29,6 +29,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef CONFIG_ALFRED_CAPABILITIES
+#include <sys/capability.h>
+#endif
 #include <sys/types.h>
 #include "debugfs.h"
 

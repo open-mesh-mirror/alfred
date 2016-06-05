@@ -77,6 +77,7 @@ static int reduce_capabilities(void)
 	cap_t cap_new;
 	cap_flag_value_t cap_flag;
 	cap_value_t cap_net_raw = CAP_NET_RAW;
+	cap_value_t cap_net_admin = CAP_NET_ADMIN;
 
 	/* get current process capabilities */
 	cap_cur = cap_get_proc();
@@ -98,6 +99,17 @@ static int reduce_capabilities(void)
 	cap_get_flag(cap_cur, CAP_NET_RAW, CAP_PERMITTED, &cap_flag);
 	if (cap_flag != CAP_CLEAR) {
 		ret = cap_set_flag(cap_new, CAP_PERMITTED, 1, &cap_net_raw,
+				   CAP_SET);
+		if (ret < 0) {
+			perror("cap_set_flag");
+			goto out;
+		}
+	}
+
+	cap_flag = CAP_CLEAR;
+	cap_get_flag(cap_cur, CAP_NET_ADMIN, CAP_PERMITTED, &cap_flag);
+	if (cap_flag != CAP_CLEAR) {
+		ret = cap_set_flag(cap_new, CAP_PERMITTED, 1, &cap_net_admin,
 				   CAP_SET);
 		if (ret < 0) {
 			perror("cap_set_flag");
