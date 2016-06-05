@@ -20,7 +20,8 @@
 
 # batadv-vis build
 BINARY_NAME = batadv-vis
-OBJ = vis.o debugfs.o
+OBJ += debugfs.o
+OBJ += vis.o
 MANPAGE = man/batadv-vis.8
 
 # batadv-vis flags and options

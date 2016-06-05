@@ -20,7 +20,7 @@
 
 # alfred-gpsd build
 BINARY_NAME = alfred-gpsd
-OBJ = alfred-gpsd.o
+OBJ += alfred-gpsd.o
 MANPAGE = man/alfred-gpsd.8
 
 # alfred flags and options

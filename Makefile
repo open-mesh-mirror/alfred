@@ -20,7 +20,17 @@
 
 # alfred build
 BINARY_NAME = alfred
-OBJ = main.o server.o client.o netsock.o send.o recv.o hash.o unix_sock.o util.o debugfs.o batadv_query.o
+OBJ += batadv_query.o
+OBJ += client.o
+OBJ += debugfs.o
+OBJ += hash.o
+OBJ += main.o
+OBJ += netsock.o
+OBJ += recv.o
+OBJ += send.o
+OBJ += server.o
+OBJ += unix_sock.o
+OBJ += util.o
 MANPAGE = man/alfred.8
 
 # alfred flags and options
