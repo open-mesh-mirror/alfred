@@ -125,7 +125,9 @@ int batadv_interface_check(const char *mesh_iface)
 	return 0;
 }
 
-struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
+static int translate_mac_debugfs(const char *mesh_iface,
+				 const struct ether_addr *mac,
+				 struct ether_addr *mac_out)
 {
 	enum {
 		tg_start,
@@ -133,24 +135,21 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 		tg_via,
 		tg_originator,
 	} pos;
-	char full_path[MAX_PATH + 1];
-	static struct ether_addr in_mac;
-	struct ether_addr *mac_result, *mac_tmp;
+	char full_path[MAX_PATH+1];
+	struct ether_addr *mac_tmp;
 	FILE *f = NULL;
 	size_t len = 0;
 	char *line = NULL;
 	char *input, *saveptr, *token;
 	int line_invalid;
-
-	memcpy(&in_mac, mac, sizeof(in_mac));
-	mac_result = &in_mac;
+	bool found = false;
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
 			  mesh_iface, full_path, sizeof(full_path));
 
 	f = fopen(full_path, "r");
 	if (!f)
-		goto out;
+		return -EOPNOTSUPP;
 
 	while (getline(&line, &len, f) != -1) {
 		line_invalid = 0;
@@ -169,8 +168,8 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 				break;
 			case tg_mac:
 				mac_tmp = ether_aton(token);
-				if (!mac_tmp || memcmp(mac_tmp, &in_mac,
-						       sizeof(in_mac)) != 0)
+				if (!mac_tmp || memcmp(mac_tmp, mac,
+						       ETH_ALEN) != 0)
 					line_invalid = 1;
 				else
 					pos = tg_via;
@@ -184,7 +183,8 @@ struct ether_addr *translate_mac(const char *mesh_iface, struct ether_addr *mac)
 				if (!mac_tmp) {
 					line_invalid = 1;
 				} else {
-					mac_result = mac_tmp;
+					memcpy(mac_out, mac_tmp, ETH_ALEN);
+					found = true;
 					goto out;
 				}
 				break;
@@ -199,6 +199,29 @@ out:
 	if (f)
 		fclose(f);
 	free(line);
+
+	if (found)
+		return 0;
+	else
+		return -ENOENT;
+}
+
+struct ether_addr *translate_mac(const char *mesh_iface,
+				 const struct ether_addr *mac)
+{
+	struct ether_addr in_mac;
+	static struct ether_addr out_mac;
+	struct ether_addr *mac_result;
+
+	/* input mac has to be copied because it could be in the shared
+	 * ether_aton buffer
+	 */
+	memcpy(&in_mac, mac, sizeof(in_mac));
+	memcpy(&out_mac, mac, sizeof(out_mac));
+	mac_result = &out_mac;
+
+	translate_mac_debugfs(mesh_iface, &in_mac, mac_result);
+
 	return mac_result;
 }
 

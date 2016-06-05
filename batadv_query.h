@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 
 struct ether_addr *translate_mac(const char *mesh_iface,
-				 struct ether_addr *mac);
+				 const struct ether_addr *mac);
 uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac);
 int batadv_interface_check(const char *mesh_iface);
 int mac_to_ipv6(const struct ether_addr *mac, struct in6_addr *addr);
