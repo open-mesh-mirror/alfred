@@ -1,3 +1,10 @@
+alfred 2016.2:
+
+ * add support for automatic debugfs mount with enabled 
+   CONFIG_ALFRED_CAPABILITIES
+
+ -- Thu, 09 Jun 2016 16:21:19 +0200
+
 alfred 2016.1:
 
  * add support for master servers to receive push_data packets with foreign
