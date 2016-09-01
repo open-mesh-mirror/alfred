@@ -1,3 +1,9 @@
+alfred 2016.3:
+
+ * integrate support for batman-adv netlink
+
+ -- Thu, 01 Sep 2016 16:18:35 +0200
+
 alfred 2016.2:
 
  * add support for automatic debugfs mount with enabled 
