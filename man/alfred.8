@@ -118,6 +118,11 @@ overhead).
 \fB\-c\fP, \fB\-\-update-command\fP \fIcommand\fP
 Specify command to execute on data change. It will be called with data-type list
 as arguments.
+.TP
+\fB\-p\fP, \fB\-\-sync-period\fP \fIperiod\fP
+Specify alfred synchronization period, in seconds. If not specified, the default
+ALFRED_INTERVAL setting of 10 seconds will be used. Fractional seconds are
+supported.
 .
 .SH EXAMPLES
 Start an alfred server listening on bridge br0 (assuming that this bridge

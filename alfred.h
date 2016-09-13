@@ -131,6 +131,7 @@ struct globals {
 	uint16_t changed_data_type_count; /* maximum is 256 */
 
 	struct timespec if_check;
+	struct timespec sync_period;
 
 	struct hashtable_t *data_hash;
 	struct hashtable_t *transaction_hash;

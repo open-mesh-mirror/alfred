@@ -372,7 +372,15 @@ int alfred_server(struct globals *globals)
 
 	while (1) {
 		clock_gettime(CLOCK_MONOTONIC, &now);
-		now.tv_sec -= ALFRED_INTERVAL;
+
+		/* subtract the synchronization period from the current time
+		 * NOTE: this is an atypical usage of time_diff as it ignores the return
+		 * value and store the result back into now, essentially performing the
+		 * operation:
+		 * now -= globals->sync_period;
+		 */
+		time_diff(&now, &globals->sync_period, &now);
+
 		if (!time_diff(&last_check, &now, &tv)) {
 			tv.tv_sec = 0;
 			tv.tv_nsec = 0;
@@ -409,7 +417,7 @@ int alfred_server(struct globals *globals)
 
 		if (globals->opmode == OPMODE_MASTER) {
 			/* we are a master */
-			printf("announce master ...\n");
+			printf("[%ld.%09ld] announce master ...\n", last_check.tv_sec, last_check.tv_nsec);
 			announce_master(globals);
 			sync_data(globals);
 		} else {

@@ -59,6 +59,8 @@ static void alfred_usage(void)
 	printf("  -m, --master                        start up the daemon in master mode, which\n");
 	printf("                                      accepts data from slaves and syncs it with\n");
 	printf("                                      other masters\n");
+	printf("  -p, --sync-period [period]          set synchronization period, in seconds\n");
+	printf("                                      fractional seconds are supported (i.e. 0.2 = 5 Hz)\n");
 	printf("\n");
 	printf("  -u, --unix-path [path]              path to unix socket used for client-server\n");
 	printf("                                      communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
@@ -156,6 +158,7 @@ out:
 static struct globals *alfred_init(int argc, char *argv[])
 {
 	int opt, opt_ind, i, ret;
+	double sync_period = 0.0;
 	struct globals *globals;
 	struct option long_options[] = {
 		{"set-data",		required_argument,	NULL,	's'},
@@ -170,6 +173,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"update-command",	required_argument,	NULL,	'c'},
 		{"version",		no_argument,		NULL,	'v'},
 		{"verbose",		no_argument,		NULL,	'd'},
+		{"sync-period",		required_argument,	NULL,	'p'},
 		{NULL,			0,			NULL,	0},
 	};
 
@@ -193,12 +197,14 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 	globals->verbose = 0;
 	globals->update_command = NULL;
+	globals->sync_period.tv_sec = ALFRED_INTERVAL;
+	globals->sync_period.tv_nsec = 0;
 	INIT_LIST_HEAD(&globals->changed_data_types);
 	globals->changed_data_type_count = 0;
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -265,6 +271,12 @@ static struct globals *alfred_init(int argc, char *argv[])
 			printf("%s %s\n", argv[0], SOURCE_VERSION);
 			printf("A.L.F.R.E.D. - Almighty Lightweight Remote Fact Exchange Daemon\n");
 			return NULL;
+		case 'p':
+			sync_period = strtod(optarg, NULL);
+			globals->sync_period.tv_sec = (int) sync_period;
+			globals->sync_period.tv_nsec = (double) (sync_period - (int) sync_period) * 1e9;
+			printf(" ** Setting sync interval to: %.9f seconds (%ld.%09ld)\n", sync_period, globals->sync_period.tv_sec, globals->sync_period.tv_nsec);
+			break;
 		case 'h':
 		default:
 			alfred_usage();
