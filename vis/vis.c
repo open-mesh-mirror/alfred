@@ -361,7 +361,7 @@ static int parse_transtable_local(struct globals *globals)
 	int ret;
 
 	ret = parse_transtable_local_netlink(globals);
-	if (ret != EOPNOTSUPP)
+	if (ret != -EOPNOTSUPP)
 		return ret;
 
 	return parse_transtable_local_debugfs(globals);
@@ -602,7 +602,7 @@ static int parse_orig_list(struct globals *globals)
 	int ret;
 
 	ret = parse_orig_list_netlink(globals);
-	if (ret != EOPNOTSUPP)
+	if (ret != -EOPNOTSUPP)
 		return ret;
 
 	return parse_orig_list_debugfs(globals);
