@@ -25,6 +25,7 @@ MANPAGE = man/alfred-gpsd.8
 
 # alfred flags and options
 CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
+CPPFLAGS += -D_GNU_SOURCE
 
 # disable verbose output
 ifneq ($(findstring $(MAKEFLAGS),s),s)

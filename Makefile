@@ -36,6 +36,7 @@ MANPAGE = man/alfred.8
 
 # alfred flags and options
 CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
+CPPFLAGS += -D_GNU_SOURCE
 LDLIBS += -lrt
 
 # Turn on alfred capability dropping by default - set this to n if you don't want/need it

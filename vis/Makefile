@@ -27,6 +27,7 @@ MANPAGE = man/batadv-vis.8
 
 # batadv-vis flags and options
 CFLAGS += -pedantic -Wall -W -std=gnu99 -fno-strict-aliasing -MD -MP
+CPPFLAGS += -D_GNU_SOURCE
 LDLIBS += -lrt
 
 # disable verbose output
