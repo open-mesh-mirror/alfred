@@ -165,7 +165,7 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 			return -ENOMEM;
 		}
 
-		list_add(&interface->list, &globals->interfaces);
+		list_add_tail(&interface->list, &globals->interfaces);
 	}
 
 	return 0;
