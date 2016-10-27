@@ -1,3 +1,11 @@
+alfred 2016.4:
+
+ * add expert option to specify sync interval
+ * fix various bugs in batadv-vis netlink integration
+ * fix build build problems with libnl-tiny
+
+ -- Thu, 27 Oct 2016 21:22:32 +0200
+
 alfred 2016.3:
 
  * integrate support for batman-adv netlink
