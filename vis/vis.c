@@ -1145,6 +1145,8 @@ static int vis_server(struct globals *globals)
 		vis_update_data(globals);
 		sleep(UPDATE_INTERVAL);
 	}
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
