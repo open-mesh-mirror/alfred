@@ -1120,13 +1120,7 @@ static struct globals *vis_init(int argc, char *argv[])
 
 static int vis_server(struct globals *globals)
 {
-	char *debugfs_mnt;
-
-	debugfs_mnt = debugfs_mount(NULL);
-	if (!debugfs_mnt) {
-		fprintf(stderr, "Error - can't mount or find debugfs\n");
-		return EXIT_FAILURE;
-	}
+	debugfs_mount(NULL);
 
 	globals->push = (struct alfred_push_data_v0 *) globals->buf;
 	globals->vis_data = (struct vis_v1 *) (globals->buf + sizeof(*globals->push) + sizeof(struct alfred_data));
