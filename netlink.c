@@ -365,3 +365,28 @@ int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
 
 	return 0;
 }
+
+static int check_nlcmd_cb(struct nl_msg *msg __unused, void *arg __unused)
+{
+	return NL_STOP;
+}
+
+int batadv_interface_check_netlink(const char *mesh_iface)
+{
+	struct nlquery_opts opts = {
+		.err = 0,
+	};
+	int ret;
+
+	ret = netlink_query_common(mesh_iface,  BATADV_CMD_GET_ORIGINATORS,
+				   check_nlcmd_cb, &opts);
+	if (ret < 0)
+		return ret;
+
+	ret = netlink_query_common(mesh_iface, BATADV_CMD_GET_TRANSTABLE_GLOBAL,
+				   check_nlcmd_cb, &opts);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}

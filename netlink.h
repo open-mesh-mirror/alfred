@@ -49,6 +49,7 @@ int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
 			  struct ether_addr *mac_out);
 int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
 		   uint8_t *tq);
+int batadv_interface_check_netlink(const char *mesh_iface);
 
 extern struct nla_policy batadv_netlink_policy[];
 

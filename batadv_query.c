@@ -136,7 +136,7 @@ int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
 	return 0;
 }
 
-int batadv_interface_check(const char *mesh_iface)
+static int batadv_interface_check_debugfs(const char *mesh_iface)
 {
 	char full_path[MAX_PATH + 1];
 	FILE *f;
@@ -164,6 +164,20 @@ int batadv_interface_check(const char *mesh_iface)
 	fclose(f);
 
 	return 0;
+}
+
+int batadv_interface_check(const char *mesh_iface)
+{
+	int ret;
+
+	enable_net_admin_capability(1);
+	ret = batadv_interface_check_netlink(mesh_iface);
+	enable_net_admin_capability(0);
+
+	if (ret == -EOPNOTSUPP)
+		ret = batadv_interface_check_debugfs(mesh_iface);
+
+	return ret;
 }
 
 static int translate_mac_debugfs(const char *mesh_iface,
