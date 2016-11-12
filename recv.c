@@ -160,6 +160,44 @@ struct transaction_head *transaction_clean(struct globals *globals,
 	return head;
 }
 
+static int finish_alfred_transaction(struct globals *globals,
+				     struct transaction_head *head,
+				     struct ether_addr mac,
+				     uint16_t num_packets)
+{
+	struct transaction_packet *transaction_packet, *safe;
+
+	/* this transaction was already finished/dropped */
+	if (head->finished != 0)
+		return -1;
+
+	/* missing packets -> cleanup everything */
+	if (head->num_packet == num_packets)
+		head->finished = -1;
+	else
+		head->finished = 1;
+
+	list_for_each_entry_safe(transaction_packet, safe, &head->packet_list,
+				 list) {
+		if (head->finished == 1)
+			finish_alfred_push_data(globals, mac,
+						transaction_packet->push);
+
+		list_del(&transaction_packet->list);
+		free(transaction_packet->push);
+		free(transaction_packet);
+	}
+
+	transaction_clean(globals, head);
+
+	if (head->client_socket < 0)
+		free(head);
+	else
+		unix_sock_req_data_finish(globals, head);
+
+	return 1;
+}
+
 static int process_alfred_push_data(struct globals *globals,
 				    struct in6_addr *source,
 				    struct alfred_push_data_v0 *push)
@@ -313,7 +351,6 @@ static int process_alfred_status_txend(struct globals *globals,
 				       struct alfred_status_v0 *request)
 {
 	struct transaction_head search, *head;
-	struct transaction_packet *transaction_packet, *safe;
 	struct ether_addr mac;
 	int len, ret;
 
@@ -336,33 +373,7 @@ static int process_alfred_status_txend(struct globals *globals,
 	if (!head)
 		return -1;
 
-	/* this transaction was already finished/dropped */
-	if (head->finished != 0)
-		return -1;
-
-	/* missing packets -> cleanup everything */
-	if (head->num_packet != ntohs(request->tx.seqno))
-		head->finished = -1;
-	else
-		head->finished = 1;
-
-	list_for_each_entry_safe(transaction_packet, safe, &head->packet_list,
-				 list) {
-		if (head->finished == 1)
-			finish_alfred_push_data(globals, mac,
-						transaction_packet->push);
-
-		list_del(&transaction_packet->list);
-		free(transaction_packet->push);
-		free(transaction_packet);
-	}
-
-	transaction_clean(globals, head);
-
-	if (head->client_socket < 0)
-		free(head);
-	else
-		unix_sock_req_data_finish(globals, head);
+	finish_alfred_transaction(globals, head, mac, ntohs(request->tx.seqno));
 
 	return 0;
 }
