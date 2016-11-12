@@ -167,10 +167,6 @@ static int finish_alfred_transaction(struct globals *globals,
 {
 	struct transaction_packet *transaction_packet, *safe;
 
-	/* this transaction was already finished/dropped */
-	if (head->finished != 0)
-		return -1;
-
 	/* missing packets -> cleanup everything */
 	if (head->num_packet == num_packets)
 		head->finished = -1;
@@ -232,10 +228,6 @@ static int process_alfred_push_data(struct globals *globals,
 			goto err;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &head->last_rx_time);
-
-	/* this transaction was already finished/dropped */
-	if (head->finished != 0)
-		return -1;
 
 	found = 0;
 	list_for_each_entry(transaction_packet, &head->packet_list, list) {
