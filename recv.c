@@ -359,13 +359,28 @@ static int process_alfred_status_txend(struct globals *globals,
 	search.id = ntohs(request->tx.id);
 
 	head = hash_find(globals->transaction_hash, &search);
-	if (!head)
-		return -1;
+	if (!head) {
+		/* slave must create the transactions to be able to correctly
+		 *  wait for it */
+		if (globals->opmode != OPMODE_MASTER)
+			goto err;
+
+		/* 0-packet txend for unknown transaction */
+		if (ntohs(request->tx.seqno) == 0)
+			goto err;
+
+		head = transaction_add(globals, mac, ntohs(request->tx.id));
+		if (!head)
+			goto err;
+	}
+	clock_gettime(CLOCK_MONOTONIC, &head->last_rx_time);
 
 	head->txend_packets = ntohs(request->tx.seqno);
 	finish_alfred_transaction(globals, head, mac);
 
 	return 0;
+err:
+	return -1;
 }
 
 int recv_alfred_packet(struct globals *globals, struct interface *interface,
