@@ -160,18 +160,6 @@ struct transaction_head *transaction_clean(struct globals *globals,
 	return head;
 }
 
-struct transaction_head *
-transaction_clean_hash(struct globals *globals, struct transaction_head *search)
-{
-	struct transaction_head *head;
-
-	head = hash_find(globals->transaction_hash, search);
-	if (!head)
-		return head;
-
-	return transaction_clean(globals, head);
-}
-
 static int process_alfred_push_data(struct globals *globals,
 				    struct in6_addr *source,
 				    struct alfred_push_data_v0 *push)
@@ -369,9 +357,7 @@ static int process_alfred_status_txend(struct globals *globals,
 		free(transaction_packet);
 	}
 
-	head = transaction_clean_hash(globals, &search);
-	if (!head)
-		return -1;
+	transaction_clean(globals, head);
 
 	if (head->client_socket < 0)
 		free(head);

@@ -159,9 +159,6 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 		       int recv_sock);
 struct transaction_head *
 transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id);
-struct transaction_head *
-transaction_clean_hash(struct globals *globals,
-		       struct transaction_head *search);
 struct transaction_head *transaction_clean(struct globals *globals,
 					   struct transaction_head *head);
 /* send.c */
