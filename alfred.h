@@ -71,7 +71,7 @@ struct transaction_head {
 	struct ether_addr server_addr;
 	uint16_t id;
 	uint8_t requested_type;
-	int finished;
+	uint16_t finished;
 	int num_packet;
 	int client_socket;
 	struct timespec last_rx_time;

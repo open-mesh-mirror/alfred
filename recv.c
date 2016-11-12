@@ -167,17 +167,14 @@ static int finish_alfred_transaction(struct globals *globals,
 {
 	struct transaction_packet *transaction_packet, *safe;
 
-	/* missing packets -> cleanup everything */
-	if (head->num_packet == num_packets)
-		head->finished = -1;
-	else
-		head->finished = 1;
+	/* finish when all packets received */
+	if (head->num_packet != num_packets)
+		return 0;
 
+	head->finished = 1;
 	list_for_each_entry_safe(transaction_packet, safe, &head->packet_list,
 				 list) {
-		if (head->finished == 1)
-			finish_alfred_push_data(globals, mac,
-						transaction_packet->push);
+		finish_alfred_push_data(globals, mac, transaction_packet->push);
 
 		list_del(&transaction_packet->list);
 		free(transaction_packet->push);
