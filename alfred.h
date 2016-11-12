@@ -71,7 +71,7 @@ struct transaction_head {
 	struct ether_addr server_addr;
 	uint16_t id;
 	uint8_t requested_type;
-	uint16_t finished;
+	uint16_t txend_packets;
 	int num_packet;
 	int client_socket;
 	struct timespec last_rx_time;
@@ -161,6 +161,12 @@ struct transaction_head *
 transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id);
 struct transaction_head *transaction_clean(struct globals *globals,
 					   struct transaction_head *head);
+
+static inline bool transaction_finished(struct transaction_head *head)
+{
+	return head->txend_packets == head->num_packet;
+}
+
 /* send.c */
 int push_data(struct globals *globals, struct interface *interface,
 	      struct in6_addr *destination, enum data_source max_source_level,

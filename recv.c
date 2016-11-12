@@ -131,7 +131,7 @@ transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id)
 	head->server_addr = mac;
 	head->id = id;
 	head->requested_type = 0;
-	head->finished = 0;
+	head->txend_packets = 0;
 	head->num_packet = 0;
 	head->client_socket = -1;
 	clock_gettime(CLOCK_MONOTONIC, &head->last_rx_time);
@@ -162,16 +162,14 @@ struct transaction_head *transaction_clean(struct globals *globals,
 
 static int finish_alfred_transaction(struct globals *globals,
 				     struct transaction_head *head,
-				     struct ether_addr mac,
-				     uint16_t num_packets)
+				     struct ether_addr mac)
 {
 	struct transaction_packet *transaction_packet, *safe;
 
 	/* finish when all packets received */
-	if (head->num_packet != num_packets)
+	if (!transaction_finished(head))
 		return 0;
 
-	head->finished = 1;
 	list_for_each_entry_safe(transaction_packet, safe, &head->packet_list,
 				 list) {
 		finish_alfred_push_data(globals, mac, transaction_packet->push);
@@ -362,7 +360,8 @@ static int process_alfred_status_txend(struct globals *globals,
 	if (!head)
 		return -1;
 
-	finish_alfred_transaction(globals, head, mac, ntohs(request->tx.seqno));
+	head->txend_packets = ntohs(request->tx.seqno);
+	finish_alfred_transaction(globals, head, mac);
 
 	return 0;
 }

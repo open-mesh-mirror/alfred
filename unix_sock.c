@@ -276,7 +276,7 @@ int unix_sock_req_data_finish(struct globals *globals,
 	requested_type = head->requested_type;
 	id = head->id;
 	client_sock = head->client_socket;
-	if (head->finished != 1)
+	if (!transaction_finished(head))
 		send_data = 0;
 
 	free(head);
