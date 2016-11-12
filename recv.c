@@ -250,6 +250,8 @@ static int process_alfred_push_data(struct globals *globals,
 	list_add_tail(&transaction_packet->list, &head->packet_list);
 	head->num_packet++;
 
+	finish_alfred_transaction(globals, head, mac);
+
 	return 0;
 err:
 	return -1;
