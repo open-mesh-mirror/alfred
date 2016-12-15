@@ -38,7 +38,7 @@
 #include "../list.h"
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2016.5"
+#define SOURCE_VERSION				"2017.0"
 #endif
 
 #define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
