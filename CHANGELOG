@@ -1,3 +1,11 @@
+alfred 2016.5:
+
+ * support interface validity checks on systems without debugfs
+ * remove debugfs check during batadv-vis startup
+ * allow out-of-order txend packets during transmissions
+
+ -- Thu, 15 Dec 2016 18:11:55 +0100
+
 alfred 2016.4:
 
  * add expert option to specify sync interval
