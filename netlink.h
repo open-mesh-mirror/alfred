@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016  B.A.T.M.A.N. contributors:
+ * Copyright (C) 2009-2017  B.A.T.M.A.N. contributors:
  *
  * Marek Lindner <mareklindner@neomailbox.ch>, Andrew Lunn <andrew@lunn.ch>
  *
