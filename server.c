@@ -218,7 +218,7 @@ static int purge_data(struct globals *globals)
 	return 0;
 }
 
-static void check_if_socket(struct interface *interface)
+static void check_if_socket(struct interface *interface, struct globals *globals)
 {
 	int sock;
 	struct ifreq ifr;
@@ -226,7 +226,7 @@ static void check_if_socket(struct interface *interface)
 	if (interface->netsock < 0)
 		return;
 
-	sock = socket(PF_INET6, SOCK_DGRAM, 0);
+	sock = socket(PF_INET, SOCK_DGRAM, 0);
 	if (sock < 0) {
 		perror("can't open socket");
 		return;
@@ -240,7 +240,7 @@ static void check_if_socket(struct interface *interface)
 		goto close;
 	}
 
-	if (interface->scope_id != (uint32_t)ifr.ifr_ifindex) {
+	if (!globals->ipv4mode && (interface->scope_id != (uint32_t)ifr.ifr_ifindex)) {
 		fprintf(stderr,
 			"iface index changed from %"PRIu32" to %d, closing netsock\n",
 			interface->scope_id, ifr.ifr_ifindex);
@@ -282,7 +282,7 @@ static void check_if_sockets(struct globals *globals)
 	globals->if_check = now;
 
 	list_for_each_entry(interface, &globals->interfaces, list)
-		check_if_socket(interface);
+		check_if_socket(interface, globals);
 }
 
 static void execute_update_command(struct globals *globals)

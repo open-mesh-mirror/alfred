@@ -123,6 +123,11 @@ as arguments.
 Specify alfred synchronization period, in seconds. If not specified, the default
 ALFRED_INTERVAL setting of 10 seconds will be used. Fractional seconds are
 supported.
+.TP
+\fB\-4 \fIgroup-address\fP \fP
+Specify the IPv4 multicast group address and enable IPv4 data-sharing (disabling
+IPv6 communication). This option is required on systems that do not support IPv6
+addressing.
 .
 .SH EXAMPLES
 Start an alfred server listening on bridge br0 (assuming that this bridge

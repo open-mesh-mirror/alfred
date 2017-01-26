@@ -190,7 +190,8 @@ static int finish_alfred_transaction(struct globals *globals,
 }
 
 static int process_alfred_push_data(struct globals *globals,
-				    struct in6_addr *source,
+				    struct interface *interface,
+				    alfred_addr *source,
 				    struct alfred_push_data_v0 *push)
 {
 	int len;
@@ -200,7 +201,10 @@ static int process_alfred_push_data(struct globals *globals,
 	struct transaction_packet *transaction_packet;
 	int found;
 
-	ret = ipv6_to_mac(source, &mac);
+	if (globals->ipv4mode)
+		ret = ipv4_to_mac(interface, source, &mac);
+	else
+		ret = ipv6_to_mac(source, &mac);
 	if (ret < 0)
 		goto err;
 
@@ -260,7 +264,7 @@ err:
 static int
 process_alfred_announce_master(struct globals *globals,
 			       struct interface *interface,
-			       struct in6_addr *source,
+			       alfred_addr *source,
 			       struct alfred_announce_master_v0 *announce)
 {
 	struct server *server;
@@ -271,7 +275,10 @@ process_alfred_announce_master(struct globals *globals,
 
 	len = ntohs(announce->header.length);
 
-	ret = ipv6_to_mac(source, &mac);
+	if (globals->ipv4mode)
+		ret = ipv4_to_mac(interface, source, &mac);
+	else
+		ret = ipv6_to_mac(source, &mac);
 	if (ret < 0)
 		return -1;
 
@@ -316,7 +323,7 @@ process_alfred_announce_master(struct globals *globals,
 
 static int process_alfred_request(struct globals *globals,
 				  struct interface *interface,
-				  struct in6_addr *source,
+				  alfred_addr *source,
 				  struct alfred_request_v0 *request)
 {
 	int len;
@@ -336,7 +343,8 @@ static int process_alfred_request(struct globals *globals,
 }
 
 static int process_alfred_status_txend(struct globals *globals,
-				       struct in6_addr *source,
+				       struct interface *interface,
+				       alfred_addr *source,
 				       struct alfred_status_v0 *request)
 {
 	struct transaction_head search, *head;
@@ -351,7 +359,10 @@ static int process_alfred_status_txend(struct globals *globals,
 	if (len != (sizeof(*request) - sizeof(request->header)))
 		return -1;
 
-	ret = ipv6_to_mac(source, &mac);
+	if (globals->ipv4mode)
+		ret = ipv4_to_mac(interface, source, &mac);
+	else
+		ret = ipv6_to_mac(source, &mac);
 	if (ret < 0)
 		return -1;
 
@@ -389,15 +400,25 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 	uint8_t buf[MAX_PAYLOAD];
 	ssize_t length;
 	struct alfred_tlv *packet;
-	struct sockaddr_in6 source;
+	struct sockaddr_in *source;
+	struct sockaddr_in source4;
+	struct sockaddr_in6 source6;
 	socklen_t sourcelen;
+	alfred_addr alfred_source;
 
 	if (interface->netsock < 0)
 		return -1;
 
-	sourcelen = sizeof(source);
+	if (globals->ipv4mode) {
+		source = (struct sockaddr_in *)&source4;
+		sourcelen = sizeof(source4);
+	} else {
+		source = (struct sockaddr_in *)&source6;
+		sourcelen = sizeof(source6);
+	}
+
 	length = recvfrom(recv_sock, buf, sizeof(buf), 0,
-			  (struct sockaddr *)&source, &sourcelen);
+			  (struct sockaddr *)source, &sourcelen);
 	if (length <= 0) {
 		perror("read from network socket failed");
 		return -1;
@@ -405,12 +426,18 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 
 	packet = (struct alfred_tlv *)buf;
 
-	/* drop packets not sent over link-local ipv6 */
-	if (!is_ipv6_eui64(&source.sin6_addr))
-		return -1;
+	if (globals->ipv4mode) {
+		memcpy(&alfred_source, &source4.sin_addr, sizeof(source4.sin_addr));
+	} else {
+		memcpy(&alfred_source, &source6.sin6_addr, sizeof(source6.sin6_addr));
+
+		/* drop packets not sent over link-local ipv6 */
+		if (!is_ipv6_eui64(&alfred_source.ipv6))
+			return -1;
+	}
 
 	/* drop packets from ourselves */
-	if (netsock_own_address(globals, &source.sin6_addr))
+	if (netsock_own_address(globals, &alfred_source))
 		return -1;
 
 	/* drop truncated packets */
@@ -424,20 +451,20 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 
 	switch (packet->type) {
 	case ALFRED_PUSH_DATA:
-		process_alfred_push_data(globals, &source.sin6_addr,
+		process_alfred_push_data(globals, interface, &alfred_source,
 					 (struct alfred_push_data_v0 *)packet);
 		break;
 	case ALFRED_ANNOUNCE_MASTER:
 		process_alfred_announce_master(globals, interface,
-					       &source.sin6_addr,
+					       &alfred_source,
 					       (struct alfred_announce_master_v0 *)packet);
 		break;
 	case ALFRED_REQUEST:
-		process_alfred_request(globals, interface, &source.sin6_addr,
+		process_alfred_request(globals, interface, &alfred_source,
 				       (struct alfred_request_v0 *)packet);
 		break;
 	case ALFRED_STATUS_TXEND:
-		process_alfred_status_txend(globals, &source.sin6_addr,
+		process_alfred_status_txend(globals, interface, &alfred_source,
 					    (struct alfred_status_v0 *)packet);
 		break;
 	default:

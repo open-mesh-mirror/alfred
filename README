@@ -20,7 +20,9 @@ programs to communicate with alfred (done via unix sockets). alfred then takes
 care of distributing the local information to other alfred servers on other
 nodes. This is done via IPv6 link-local multicast, and does not require any
 configuration. A user can request data from alfred, and will receive the
-information available from all alfred servers in the network.
+information available from all alfred servers in the network. Alternatively,
+alfred can be configured to distribute the local information via IPv4 multicast.
+This is configured by setting the IPv4 multicast group address in the -4 option.
 
 Compilation
 -----------

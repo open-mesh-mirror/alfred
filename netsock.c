@@ -43,10 +43,12 @@
 #include "list.h"
 #include "hash.h"
 
-const struct in6_addr in6addr_localmcast = {{{ 0xff, 0x02, 0x00, 0x00,
-					       0x00, 0x00, 0x00, 0x00,
-					       0x00, 0x00, 0x00, 0x00,
-					       0x00, 0x00, 0x00, 0x01 } } };
+alfred_addr alfred_mcast = {
+		.ipv6 = {{{ 0xff, 0x02, 0x00, 0x00,
+			    0x00, 0x00, 0x00, 0x00,
+			    0x00, 0x00, 0x00, 0x00,
+			    0x00, 0x00, 0x00, 0x01 } } }
+};
 
 static int server_compare(void *d1, void *d2)
 {
@@ -262,7 +264,7 @@ static int netsock_open(struct interface *interface)
 	memset(&sin6_mc, 0, sizeof(sin6_mc));
 	sin6_mc.sin6_port = htons(ALFRED_PORT);
 	sin6_mc.sin6_family = AF_INET6;
-	memcpy(&sin6_mc.sin6_addr, &in6addr_localmcast,
+	memcpy(&sin6_mc.sin6_addr, &alfred_mcast,
 	       sizeof(sin6_mc.sin6_addr));
 	sin6_mc.sin6_scope_id = interface->scope_id;
 
@@ -291,7 +293,7 @@ static int netsock_open(struct interface *interface)
 		goto err;
 	}
 
-	memcpy(&mreq.ipv6mr_multiaddr, &in6addr_localmcast,
+	memcpy(&mreq.ipv6mr_multiaddr, &alfred_mcast,
 	       sizeof(mreq.ipv6mr_multiaddr));
 	mreq.ipv6mr_interface = interface->scope_id;
 
@@ -335,6 +337,134 @@ err:
 	return -1;
 }
 
+static int netsock_open4(struct interface *interface)
+{
+	int sock;
+	int sock_mc;
+	struct sockaddr_in sin4, sin_mc;
+	struct ip_mreq mreq;
+	struct ifreq ifr;
+	int ret;
+
+	interface->netsock = -1;
+	interface->netsock_mcast = -1;
+
+	sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock  < 0) {
+		perror("ipv4: can't open socket");
+		return -1;
+	}
+
+	sock_mc = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock_mc  < 0) {
+		close(sock);
+		perror("ipv4: can't open mc socket");
+		return -1;
+	}
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, interface->interface, IFNAMSIZ);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+	if (ioctl(sock_mc, SIOCGIFHWADDR, &ifr) == -1) {
+		perror("ipv4: can't get MAC address");
+		goto err;
+	}
+	memcpy(&interface->hwaddr, &ifr.ifr_hwaddr.sa_data, 6);
+
+	memset(&sin4, 0, sizeof(sin4));
+	sin4.sin_port = htons(ALFRED_PORT);
+	sin4.sin_family = AF_INET;
+	sin4.sin_addr.s_addr = INADDR_ANY;
+
+	memset(&sin_mc, 0, sizeof(sin_mc));
+	sin_mc.sin_port = htons(ALFRED_PORT);
+	sin_mc.sin_family = AF_INET;
+	memcpy(&sin_mc.sin_addr, &alfred_mcast, sizeof(sin_mc.sin_addr));
+
+	enable_raw_bind_capability(1);
+	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
+		       strlen(interface->interface) + 1)) {
+		perror("ipv4: can't bind to device");
+		goto err;
+	}
+
+	if (setsockopt(sock_mc, SOL_SOCKET, SO_BINDTODEVICE,
+		       interface->interface, strlen(interface->interface) + 1)) {
+		perror("ipv4: can't bind to device");
+		goto err;
+	}
+	enable_raw_bind_capability(0);
+
+	ret = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ret, sizeof(ret)) < 0) {
+		perror("ipv4: can't set reuse flag");
+		goto err;
+	}
+	if (setsockopt(sock_mc, SOL_SOCKET, SO_REUSEADDR, &ret, sizeof(ret)) < 0) {
+		perror("ipv4: can't set mc reuse flag");
+		goto err;
+	}
+
+	if (bind(sock, (struct sockaddr *)&sin4, sizeof(sin4)) < 0) {
+		perror("ipv4: can't bind");
+		goto err;
+	}
+
+	if (bind(sock_mc, (struct sockaddr *)&sin_mc, sizeof(sin_mc)) < 0) {
+		perror("ipv4: can't bind mc");
+		goto err;
+	}
+
+	memcpy(&mreq.imr_multiaddr, &alfred_mcast.ipv4, sizeof(mreq.imr_multiaddr));
+
+	if (ioctl(sock_mc, SIOCGIFADDR, &ifr) < 0) {
+		perror("ipv4: can't get IP address");
+		goto err;
+	}
+	mreq.imr_interface = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
+	memcpy(&interface->address.ipv4,
+	       &((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr,
+	       sizeof(struct in_addr));
+
+	if (setsockopt(sock_mc, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) {
+		perror("ipv4: can't add multicast membership");
+		goto err;
+	}
+
+	ret = fcntl(sock, F_GETFL, 0);
+	if (ret < 0) {
+		perror("failed to get file status flags");
+		goto err;
+	}
+
+	ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
+	if (ret < 0) {
+		perror("failed to set file status flags");
+		goto err;
+	}
+
+	ret = fcntl(sock_mc, F_GETFL, 0);
+	if (ret < 0) {
+		perror("ipv4: failed to get file status flags");
+		goto err;
+	}
+
+	ret = fcntl(sock_mc, F_SETFL, ret | O_NONBLOCK);
+	if (ret < 0) {
+		perror("ipv4: failed to set file status flags");
+		goto err;
+	}
+
+	interface->netsock = sock;
+	interface->netsock_mcast = sock_mc;
+
+	return 0;
+err:
+	close(sock);
+	close(sock_mc);
+	return -1;
+}
+
 int netsock_open_all(struct globals *globals)
 {
 	int num_socks = 0;
@@ -342,7 +472,11 @@ int netsock_open_all(struct globals *globals)
 	struct interface *interface;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
-		ret = netsock_open(interface);
+		if (globals->ipv4mode)
+			ret = netsock_open4(interface);
+		else
+			ret = netsock_open(interface);
+
 		if (ret >= 0)
 			num_socks++;
 	}
@@ -355,8 +489,12 @@ void netsock_reopen(struct globals *globals)
 	struct interface *interface;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
-		if (interface->netsock < 0)
-			netsock_open(interface);
+		if (interface->netsock < 0) {
+			if (globals->ipv4mode)
+				netsock_open4(interface);
+			else
+				netsock_open(interface);
+		}
 	}
 }
 
@@ -430,7 +568,7 @@ int netsock_receive_packet(struct globals *globals, fd_set *fds)
 }
 
 int netsock_own_address(const struct globals *globals,
-			const struct in6_addr *address)
+			const alfred_addr *address)
 {
 	struct interface *interface;
 

@@ -48,6 +48,11 @@ enum data_source {
 	SOURCE_SYNCED = 2,
 };
 
+typedef union {
+	struct in_addr ipv4;
+	struct in6_addr ipv6;
+} alfred_addr;
+
 struct dataset {
 	struct alfred_data data;
 	unsigned char *buf;
@@ -80,7 +85,7 @@ struct transaction_head {
 
 struct server {
 	struct ether_addr hwaddr;
-	struct in6_addr address;
+	alfred_addr address;
 	struct timespec last_seen;
 	uint8_t tq;
 };
@@ -100,11 +105,12 @@ enum clientmode {
 
 struct interface {
 	struct ether_addr hwaddr;
-	struct in6_addr address;
+	alfred_addr address;
 	uint32_t scope_id;
 	char *interface;
 	int netsock;
 	int netsock_mcast;
+	int netsock_arp;
 
 	struct hashtable_t *server_hash;
 
@@ -122,6 +128,7 @@ struct globals {
 	int clientmode_arg;
 	int clientmode_version;
 	int verbose;
+	int ipv4mode;
 
 	int unix_sock;
 	const char *unix_path;
@@ -142,7 +149,7 @@ struct globals {
 
 #define MAX_PAYLOAD ((1 << 16) - 1 - sizeof(struct udphdr))
 
-extern const struct in6_addr in6addr_localmcast;
+extern alfred_addr alfred_mcast;
 
 /* server.c */
 int alfred_server(struct globals *globals);
@@ -169,13 +176,13 @@ static inline bool transaction_finished(struct transaction_head *head)
 
 /* send.c */
 int push_data(struct globals *globals, struct interface *interface,
-	      struct in6_addr *destination, enum data_source max_source_level,
+	      alfred_addr *destination, enum data_source max_source_level,
 	      int type_filter, uint16_t tx_id);
 int announce_master(struct globals *globals);
 int push_local_data(struct globals *globals);
 int sync_data(struct globals *globals);
-ssize_t send_alfred_packet(struct interface *interface,
-			   const struct in6_addr *dest, void *buf, int length);
+ssize_t send_alfred_packet(struct globals *globals, struct interface *interface,
+			   const alfred_addr *dest, void *buf, int length);
 /* unix_sock.c */
 int unix_sock_read(struct globals *globals);
 int unix_sock_open_daemon(struct globals *globals);
@@ -195,10 +202,12 @@ int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock);
 void netsock_check_error(struct globals *globals, fd_set *errfds);
 int netsock_receive_packet(struct globals *globals, fd_set *fds);
 int netsock_own_address(const struct globals *globals,
-			const struct in6_addr *address);
+			const alfred_addr *address);
 /* util.c */
 int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff);
 void time_random_seed(void);
 uint16_t get_random_id(void);
 bool is_valid_ether_addr(uint8_t *addr);
+int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
+		     struct ether_addr *mac);

@@ -239,7 +239,7 @@ static int check_interface(const char *iface)
 		return -1;
 	}
 
-	sock = socket(PF_INET6, SOCK_DGRAM, 0);
+	sock = socket(PF_INET, SOCK_DGRAM, 0);
 	if (sock < 0) {
 		perror("can't open socket");
 		return -1;

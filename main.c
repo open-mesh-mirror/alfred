@@ -19,6 +19,7 @@
  *
  */
 
+#include <arpa/inet.h>
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -61,6 +62,7 @@ static void alfred_usage(void)
 	printf("                                      other masters\n");
 	printf("  -p, --sync-period [period]          set synchronization period, in seconds\n");
 	printf("                                      fractional seconds are supported (i.e. 0.2 = 5 Hz)\n");
+	printf("  -4 [group-address]                  specify IPv4 multicast address and operate in IPv4 mode");
 	printf("\n");
 	printf("  -u, --unix-path [path]              path to unix socket used for client-server\n");
 	printf("                                      communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
@@ -196,6 +198,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->mesh_iface = "bat0";
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 	globals->verbose = 0;
+	globals->ipv4mode = 0;
 	globals->update_command = NULL;
 	globals->sync_period.tv_sec = ALFRED_INTERVAL;
 	globals->sync_period.tv_nsec = 0;
@@ -204,7 +207,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:4:", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -276,6 +279,11 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->sync_period.tv_sec = (int) sync_period;
 			globals->sync_period.tv_nsec = (double) (sync_period - (int) sync_period) * 1e9;
 			printf(" ** Setting sync interval to: %.9f seconds (%ld.%09ld)\n", sync_period, globals->sync_period.tv_sec, globals->sync_period.tv_nsec);
+			break;
+		case '4':
+			globals->ipv4mode = 1;
+			inet_pton(AF_INET, optarg, &alfred_mcast.ipv4);
+			printf(" ** IPv4 Multicast Mode: %x\n", alfred_mcast.ipv4.s_addr);
 			break;
 		case 'h':
 		default:

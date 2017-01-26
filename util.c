@@ -23,7 +23,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <time.h>
 #include "alfred.h"
@@ -74,4 +77,31 @@ bool is_valid_ether_addr(uint8_t addr[ETH_ALEN])
 		return false;
 
 	return true;
+}
+
+int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
+		     struct ether_addr *mac)
+{
+	struct arpreq arpreq;
+	struct sockaddr_in *sin;
+
+	memset(&arpreq, 0, sizeof(arpreq));
+	memset(mac, 0, ETH_ALEN);
+
+	sin = (struct sockaddr_in *)&arpreq.arp_pa;
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = addr->ipv4.s_addr;
+
+	strcpy(arpreq.arp_dev, interface->interface);
+	if (ioctl(interface->netsock, SIOCGARP, &arpreq) < 0)
+		return -1;
+
+	if (arpreq.arp_flags & ATF_COM) {
+		memcpy(mac, arpreq.arp_ha.sa_data, sizeof(*mac));
+	} else {
+		perror("arp: incomplete");
+		return -1;
+	}
+
+	return 0;
 }

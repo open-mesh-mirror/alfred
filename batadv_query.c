@@ -80,22 +80,22 @@ out:
 	return ret;
 }
 
-int mac_to_ipv6(const struct ether_addr *mac, struct in6_addr *addr)
+int mac_to_ipv6(const struct ether_addr *mac, alfred_addr *addr)
 {
 	memset(addr, 0, sizeof(*addr));
-	addr->s6_addr[0] = 0xfe;
-	addr->s6_addr[1] = 0x80;
+	addr->ipv6.s6_addr[0] = 0xfe;
+	addr->ipv6.s6_addr[1] = 0x80;
 
-	addr->s6_addr[8] = mac->ether_addr_octet[0] ^ 0x02;
-	addr->s6_addr[9] = mac->ether_addr_octet[1];
-	addr->s6_addr[10] = mac->ether_addr_octet[2];
+	addr->ipv6.s6_addr[8] = mac->ether_addr_octet[0] ^ 0x02;
+	addr->ipv6.s6_addr[9] = mac->ether_addr_octet[1];
+	addr->ipv6.s6_addr[10] = mac->ether_addr_octet[2];
 
-	addr->s6_addr[11] = 0xff;
-	addr->s6_addr[12] = 0xfe;
+	addr->ipv6.s6_addr[11] = 0xff;
+	addr->ipv6.s6_addr[12] = 0xfe;
 
-	addr->s6_addr[13] = mac->ether_addr_octet[3];
-	addr->s6_addr[14] = mac->ether_addr_octet[4];
-	addr->s6_addr[15] = mac->ether_addr_octet[5];
+	addr->ipv6.s6_addr[13] = mac->ether_addr_octet[3];
+	addr->ipv6.s6_addr[14] = mac->ether_addr_octet[4];
+	addr->ipv6.s6_addr[15] = mac->ether_addr_octet[5];
 
 	return 0;
 }
@@ -118,17 +118,29 @@ int is_ipv6_eui64(const struct in6_addr *addr)
 	return 1;
 }
 
-int ipv6_to_mac(const struct in6_addr *addr, struct ether_addr *mac)
+int ipv6_to_mac(const alfred_addr *addr, struct ether_addr *mac)
 {
-	if (!is_ipv6_eui64(addr))
+	if (!is_ipv6_eui64(&addr->ipv6))
 		return -EINVAL;
 
-	mac->ether_addr_octet[0] = addr->s6_addr[8] ^ 0x02;
-	mac->ether_addr_octet[1] = addr->s6_addr[9];
-	mac->ether_addr_octet[2] = addr->s6_addr[10];
-	mac->ether_addr_octet[3] = addr->s6_addr[13];
-	mac->ether_addr_octet[4] = addr->s6_addr[14];
-	mac->ether_addr_octet[5] = addr->s6_addr[15];
+	mac->ether_addr_octet[0] = addr->ipv6.s6_addr[8] ^ 0x02;
+	mac->ether_addr_octet[1] = addr->ipv6.s6_addr[9];
+	mac->ether_addr_octet[2] = addr->ipv6.s6_addr[10];
+	mac->ether_addr_octet[3] = addr->ipv6.s6_addr[13];
+	mac->ether_addr_octet[4] = addr->ipv6.s6_addr[14];
+	mac->ether_addr_octet[5] = addr->ipv6.s6_addr[15];
+
+	if (!is_valid_ether_addr(mac->ether_addr_octet))
+		return -EINVAL;
+
+	return 0;
+}
+
+int ipv4_to_mac(struct interface *interface,
+		const alfred_addr *addr, struct ether_addr *mac)
+{
+	if (ipv4_arp_request(interface, addr, mac) < 0)
+		return -EINVAL;
 
 	if (!is_valid_ether_addr(mac->ether_addr_octet))
 		return -EINVAL;
