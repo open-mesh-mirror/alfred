@@ -276,8 +276,8 @@ static struct globals *alfred_init(int argc, char *argv[])
 			return NULL;
 		case 'p':
 			sync_period = strtod(optarg, NULL);
-			globals->sync_period.tv_sec = (int) sync_period;
-			globals->sync_period.tv_nsec = (double) (sync_period - (int) sync_period) * 1e9;
+			globals->sync_period.tv_sec = (int)sync_period;
+			globals->sync_period.tv_nsec = (double)(sync_period - (int)sync_period) * 1e9;
 			printf(" ** Setting sync interval to: %.9f seconds (%ld.%09ld)\n", sync_period, globals->sync_period.tv_sec, globals->sync_period.tv_nsec);
 			break;
 		case '4':
