@@ -92,7 +92,9 @@ int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
 	sin->sin_family = AF_INET;
 	sin->sin_addr.s_addr = addr->ipv4.s_addr;
 
-	strcpy(arpreq.arp_dev, interface->interface);
+	strncpy(arpreq.arp_dev, interface->interface, sizeof(arpreq.arp_dev));
+	arpreq.arp_dev[sizeof(arpreq.arp_dev) - 1] = '\0';
+
 	if (ioctl(interface->netsock, SIOCGARP, &arpreq) < 0)
 		return -1;
 
