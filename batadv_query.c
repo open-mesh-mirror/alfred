@@ -34,7 +34,7 @@
 #endif
 #include <sys/types.h>
 
-#include "netlink.h"
+#include "batadv_querynl.h"
 #include "debugfs.h"
 
 #define DEBUG_BATIF_PATH_FMT "%s/batman_adv/%s"

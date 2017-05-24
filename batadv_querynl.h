@@ -19,31 +19,17 @@
  *
  */
 
-#ifndef _ALFRED_NETLINK_H
-#define _ALFRED_NETLINK_H
+#ifndef _BATADV_QUERYNL_H
+#define _BATADV_QUERYNL_H
 
-#include <netlink/genl/genl.h>
-#include <netlink/genl/ctrl.h>
-#include <stddef.h>
+#include <stdint.h>
 
-struct nlquery_opts {
-	int err;
-};
+struct ether_addr;
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
+int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
+			  struct ether_addr *mac_out);
+int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
+		   uint8_t *tq);
+int batadv_interface_check_netlink(const char *mesh_iface);
 
-#ifndef container_of
-#define container_of(ptr, type, member) __extension__ ({ \
-	const __typeof__(((type *)0)->member) *__pmember = (ptr); \
-	(type *)((char *)__pmember - offsetof(type, member)); })
-#endif
-
-int netlink_query_common(const char *mesh_iface, uint8_t nl_cmd,
-			 nl_recvmsg_msg_cb_t callback,
-			 struct nlquery_opts *query_opts);
-int missing_mandatory_attrs(struct nlattr *attrs[],  const int mandatory[],
-			    size_t num);
-
-extern struct nla_policy batadv_netlink_policy[];
-
-#endif /* _ALFRED_NETLINK_H */
+#endif /* _BATADV_QUERYNL_H */
