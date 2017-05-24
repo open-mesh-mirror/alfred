@@ -153,7 +153,6 @@ extern alfred_addr alfred_mcast;
 
 /* server.c */
 int alfred_server(struct globals *globals);
-int set_best_server(struct globals *globals);
 void changed_data_type(struct globals *globals, uint8_t arg);
 
 /* client.c */

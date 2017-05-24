@@ -268,7 +268,6 @@ process_alfred_announce_master(struct globals *globals,
 			       struct alfred_announce_master_v0 *announce)
 {
 	struct server *server;
-	struct ether_addr *macaddr;
 	struct ether_addr mac;
 	int ret;
 	int len;
@@ -296,6 +295,7 @@ process_alfred_announce_master(struct globals *globals,
 
 		memcpy(&server->hwaddr, &mac, ETH_ALEN);
 		memcpy(&server->address, source, sizeof(*source));
+		server->tq = 0;
 
 		if (hash_add(interface->server_hash, server)) {
 			free(server);
@@ -304,25 +304,6 @@ process_alfred_announce_master(struct globals *globals,
 	}
 
 	clock_gettime(CLOCK_MONOTONIC, &server->last_seen);
-
-	/* TQ is not used for master sync mode */
-	if (globals->opmode == OPMODE_MASTER) {
-		server->tq = 0;
-		return 0;
-	}
-
-	if (strcmp(globals->mesh_iface, "none") != 0) {
-		macaddr = translate_mac(globals->mesh_iface,
-					(struct ether_addr *)&server->hwaddr);
-		if (macaddr)
-			server->tq = get_tq(globals->mesh_iface, macaddr);
-		else
-			server->tq = 0;
-	} else {
-		server->tq = 255;
-	}
-
-	set_best_server(globals);
 
 	return 0;
 }

@@ -113,7 +113,7 @@ static int create_hashes(struct globals *globals)
 	return 0;
 }
 
-int set_best_server(struct globals *globals)
+static int set_best_server(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;
 	struct server *best_server = NULL;
@@ -216,6 +216,39 @@ static int purge_data(struct globals *globals)
 	}
 
 	return 0;
+}
+
+static void update_server_info(struct globals *globals)
+{
+	struct hash_it_t *hashit = NULL;
+	struct interface *interface;
+	struct ether_addr *macaddr;
+
+	/* TQ is not used for master sync mode */
+	if (globals->opmode == OPMODE_MASTER)
+		return;
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		while (NULL != (hashit = hash_iterate(interface->server_hash,
+						      hashit))) {
+			struct server *server = hashit->bucket->data;
+
+			if (strcmp(globals->mesh_iface, "none") == 0) {
+				server->tq = 255;
+				continue;
+			}
+
+			macaddr = translate_mac(globals->mesh_iface,
+						&server->hwaddr);
+			if (macaddr)
+				server->tq = get_tq(globals->mesh_iface,
+						    macaddr);
+			else
+				server->tq = 0;
+		}
+	}
+
+	set_best_server(globals);
 }
 
 static void check_if_socket(struct interface *interface, struct globals *globals)
@@ -422,6 +455,7 @@ int alfred_server(struct globals *globals)
 			sync_data(globals);
 		} else {
 			/* send local data to server */
+			update_server_info(globals);
 			push_local_data(globals);
 		}
 		purge_data(globals);
