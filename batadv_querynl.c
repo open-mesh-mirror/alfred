@@ -49,8 +49,7 @@ static const int translate_mac_netlink_mandatory[] = {
 };
 
 struct translate_mac_netlink_opts {
-	struct ether_addr mac;
-	bool found;
+	struct hashtable_t *tg_hash;
 	struct nlquery_opts query_opts;
 };
 
@@ -61,6 +60,8 @@ static int translate_mac_netlink_cb(struct nl_msg *msg, void *arg)
 	struct nlquery_opts *query_opts = arg;
 	struct translate_mac_netlink_opts *opts;
 	struct genlmsghdr *ghdr;
+	struct ether_addr mac_addr;
+	struct ether_addr mac_orig;
 	uint8_t *addr;
 	uint8_t *orig;
 
@@ -90,39 +91,29 @@ static int translate_mac_netlink_cb(struct nl_msg *msg, void *arg)
 	if (!attrs[BATADV_ATTR_FLAG_BEST])
 		return NL_OK;
 
-	if (memcmp(&opts->mac, addr, ETH_ALEN) != 0)
-		return NL_OK;
-
-	memcpy(&opts->mac, orig, ETH_ALEN);
-	opts->found = true;
+	memcpy(&mac_addr, addr, sizeof(mac_addr));
+	memcpy(&mac_orig, orig, sizeof(mac_orig));
+	tg_hash_add(opts->tg_hash, &mac_addr, &mac_orig);
 	opts->query_opts.err = 0;
 
 	return NL_STOP;
 }
 
-int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
-			  struct ether_addr *mac_out)
+int translate_mac_netlink(const char *mesh_iface, struct hashtable_t *tg_hash)
 {
 	struct translate_mac_netlink_opts opts = {
-		.found = false,
+		.tg_hash = tg_hash,
 		.query_opts = {
 			.err = 0,
 		},
 	};
 	int ret;
 
-	memcpy(&opts.mac, mac, ETH_ALEN);
-
 	ret = netlink_query_common(mesh_iface,
 				   BATADV_CMD_GET_TRANSTABLE_GLOBAL,
 				   translate_mac_netlink_cb, &opts.query_opts);
 	if (ret < 0)
 		return ret;
-
-	if (!opts.found)
-		return -ENOENT;
-
-	memcpy(mac_out, &opts.mac, ETH_ALEN);
 
 	return 0;
 }

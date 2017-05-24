@@ -193,8 +193,7 @@ int batadv_interface_check(const char *mesh_iface)
 }
 
 static int translate_mac_debugfs(const char *mesh_iface,
-				 const struct ether_addr *mac,
-				 struct ether_addr *mac_out)
+				 struct hashtable_t *tg_hash)
 {
 	enum {
 		tg_start,
@@ -204,12 +203,12 @@ static int translate_mac_debugfs(const char *mesh_iface,
 	} pos;
 	char full_path[MAX_PATH+1];
 	struct ether_addr *mac_tmp;
+	struct ether_addr mac;
 	FILE *f = NULL;
 	size_t len = 0;
 	char *line = NULL;
 	char *input, *saveptr, *token;
 	int line_invalid;
-	bool found = false;
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
 			  mesh_iface, full_path, sizeof(full_path));
@@ -235,11 +234,12 @@ static int translate_mac_debugfs(const char *mesh_iface,
 				break;
 			case tg_mac:
 				mac_tmp = ether_aton(token);
-				if (!mac_tmp || memcmp(mac_tmp, mac,
-						       ETH_ALEN) != 0)
+				if (!mac_tmp) {
 					line_invalid = 1;
-				else
+				} else {
+					memcpy(&mac, mac_tmp, sizeof(mac));
 					pos = tg_via;
+				}
 				break;
 			case tg_via:
 				if (strcmp(token, "via") == 0)
@@ -247,13 +247,10 @@ static int translate_mac_debugfs(const char *mesh_iface,
 				break;
 			case tg_originator:
 				mac_tmp = ether_aton(token);
-				if (!mac_tmp) {
+				if (!mac_tmp)
 					line_invalid = 1;
-				} else {
-					memcpy(mac_out, mac_tmp, ETH_ALEN);
-					found = true;
-					goto out;
-				}
+				else
+					tg_hash_add(tg_hash, &mac, mac_tmp);
 				break;
 			}
 
@@ -262,40 +259,100 @@ static int translate_mac_debugfs(const char *mesh_iface,
 		}
 	}
 
-out:
 	if (f)
 		fclose(f);
 	free(line);
 
-	if (found)
-		return 0;
-	else
-		return -ENOENT;
+	return 0;
 }
 
-struct ether_addr *translate_mac(const char *mesh_iface,
-				 const struct ether_addr *mac)
+static int tg_compare(void *d1, void *d2)
 {
-	struct ether_addr in_mac;
-	static struct ether_addr out_mac;
-	struct ether_addr *mac_result;
+	struct tg_entry *s1 = d1, *s2 = d2;
+
+	if (memcmp(&s1->mac, &s2->mac, sizeof(s1->mac)) == 0)
+		return 1;
+	else
+		return 0;
+}
+
+static int tg_choose(void *d1, int size)
+{
+	struct tg_entry *s1 = d1;
+	uint32_t hash = 0;
+	size_t i;
+
+	for (i = 0; i < sizeof(s1->mac); i++) {
+		hash += s1->mac.ether_addr_octet[i];
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+	return hash % size;
+}
+
+struct hashtable_t *tg_hash_new(const char *mesh_iface)
+{
+	struct hashtable_t *tg_hash;
 	int ret;
 
-	/* input mac has to be copied because it could be in the shared
-	 * ether_aton buffer
-	 */
-	memcpy(&in_mac, mac, sizeof(in_mac));
-	memcpy(&out_mac, mac, sizeof(out_mac));
-	mac_result = &out_mac;
+	tg_hash = hash_new(64, tg_compare, tg_choose);
+	if (!tg_hash)
+		return NULL;
 
 	enable_net_admin_capability(1);
-	ret = translate_mac_netlink(mesh_iface, &in_mac, mac_result);
+	ret = translate_mac_netlink(mesh_iface, tg_hash);
 	enable_net_admin_capability(0);
 
+	ret = -EOPNOTSUPP;
 	if (ret == -EOPNOTSUPP)
-		translate_mac_debugfs(mesh_iface, &in_mac, mac_result);
+		translate_mac_debugfs(mesh_iface, tg_hash);
 
-	return mac_result;
+	return tg_hash;
+}
+
+void tg_hash_free(struct hashtable_t *tg_hash)
+{
+	hash_delete(tg_hash, free);
+}
+
+int tg_hash_add(struct hashtable_t *tg_hash, struct ether_addr *mac,
+		struct ether_addr *originator)
+{
+	struct tg_entry *n;
+
+	n = malloc(sizeof(*n));
+	if (!n)
+		return -ENOMEM;
+
+	n->mac = *mac;
+	n->originator = *originator;
+
+	if (hash_add(tg_hash, n)) {
+		free(n);
+		return -EEXIST;
+	}
+
+	return 0;
+}
+
+struct ether_addr *translate_mac(struct hashtable_t *tg_hash,
+				 const struct ether_addr *mac)
+{
+	struct tg_entry search = {
+		.mac = *mac,
+	};
+	struct tg_entry *found;
+
+	found = hash_find(tg_hash, &search);
+	if (!found)
+		return 0;
+
+	return &found->originator;
 }
 
 static int get_tq_debugfs(const char *mesh_iface, struct hashtable_t *orig_hash)

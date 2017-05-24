@@ -27,8 +27,7 @@
 struct ether_addr;
 struct hashtable_t;
 
-int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
-			  struct ether_addr *mac_out);
+int translate_mac_netlink(const char *mesh_iface, struct hashtable_t *tg_hash);
 int get_tq_netlink(const char *mesh_iface, struct hashtable_t *orig_hash);
 int batadv_interface_check_netlink(const char *mesh_iface);
 

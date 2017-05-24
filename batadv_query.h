@@ -31,7 +31,16 @@ struct orig_entry {
 	uint8_t tq;
 };
 
-struct ether_addr *translate_mac(const char *mesh_iface,
+struct tg_entry {
+	struct ether_addr mac;
+	struct ether_addr originator;
+};
+
+struct hashtable_t *tg_hash_new(const char *mesh_iface);
+void tg_hash_free(struct hashtable_t *tg_hash);
+int tg_hash_add(struct hashtable_t *tg_hash, struct ether_addr *mac,
+		struct ether_addr *originator);
+struct ether_addr *translate_mac(struct hashtable_t *tg_hash,
 				 const struct ether_addr *mac);
 
 struct hashtable_t *orig_hash_new(const char *mesh_iface);

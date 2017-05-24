@@ -223,6 +223,7 @@ static void update_server_info(struct globals *globals)
 	struct hash_it_t *hashit = NULL;
 	struct interface *interface;
 	struct ether_addr *macaddr;
+	struct hashtable_t *tg_hash;
 	struct hashtable_t *orig_hash;
 
 	/* TQ is not used for master sync mode */
@@ -230,10 +231,16 @@ static void update_server_info(struct globals *globals)
 		return;
 
 	if (strcmp(globals->mesh_iface, "none") != 0) {
+		tg_hash = tg_hash_new(globals->mesh_iface);
+		if (!globals->data_hash) {
+			fprintf(stderr, "Failed to create translation hash\n");
+			return;
+		}
+
 		orig_hash = orig_hash_new(globals->mesh_iface);
 		if (!orig_hash) {
 			fprintf(stderr, "Failed to create originator hash\n");
-			return;
+			goto free_tg_hash;
 		}
 	}
 
@@ -247,8 +254,7 @@ static void update_server_info(struct globals *globals)
 				continue;
 			}
 
-			macaddr = translate_mac(globals->mesh_iface,
-						&server->hwaddr);
+			macaddr = translate_mac(tg_hash, &server->hwaddr);
 			if (macaddr)
 				server->tq = get_tq(orig_hash, macaddr);
 			else
@@ -260,6 +266,9 @@ static void update_server_info(struct globals *globals)
 
 	if (orig_hash)
 		orig_hash_free(orig_hash);
+free_tg_hash:
+	if (tg_hash)
+		tg_hash_free(tg_hash);
 }
 
 static void check_if_socket(struct interface *interface, struct globals *globals)
