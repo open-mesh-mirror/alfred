@@ -298,8 +298,7 @@ struct ether_addr *translate_mac(const char *mesh_iface,
 	return mac_result;
 }
 
-static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
-			  uint8_t *tq)
+static int get_tq_debugfs(const char *mesh_iface, struct hashtable_t *orig_hash)
 {
 	enum {
 		orig_mac,
@@ -308,16 +307,13 @@ static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
 		orig_tqvalue,
 	} pos;
 	char full_path[MAX_PATH + 1];
-	static struct ether_addr in_mac;
 	struct ether_addr *mac_tmp;
 	FILE *f = NULL;
 	size_t len = 0;
 	char *line = NULL;
 	char *input, *saveptr, *token;
 	int line_invalid;
-	bool found = false;
-
-	memcpy(&in_mac, mac, sizeof(in_mac));
+	uint8_t tq;
 
 	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_ORIGINATORS,
 			  mesh_iface, full_path, sizeof(full_path));
@@ -337,8 +333,7 @@ static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
 			switch (pos) {
 			case orig_mac:
 				mac_tmp = ether_aton(token);
-				if (!mac_tmp || memcmp(mac_tmp, &in_mac,
-						       sizeof(in_mac)) != 0)
+				if (!mac_tmp)
 					line_invalid = 1;
 				else
 					pos = orig_lastseen;
@@ -365,9 +360,8 @@ static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
 					line_invalid = 1;
 				} else {
 					token[strlen(token) - 1] = '\0';
-					*tq = strtol(token, NULL, 10);
-					found = true;
-					goto out;
+					tq = strtol(token, NULL, 10);
+					orig_hash_add(orig_hash, mac_tmp, tq);
 				}
 				break;
 			}
@@ -377,34 +371,98 @@ static int get_tq_debugfs(const char *mesh_iface, struct ether_addr *mac,
 		}
 	}
 
-out:
 	if (f)
 		fclose(f);
 	free(line);
 
-	if (found)
-		return 0;
-	else
-		return -ENOENT;
+	return 0;
 }
 
-uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac)
+static int orig_compare(void *d1, void *d2)
 {
-	struct ether_addr in_mac;
-	uint8_t tq = 0;
+	struct orig_entry *s1 = d1, *s2 = d2;
+
+	if (memcmp(&s1->mac, &s2->mac, sizeof(s1->mac)) == 0)
+		return 1;
+	else
+		return 0;
+}
+
+static int orig_choose(void *d1, int size)
+{
+	struct orig_entry *s1 = d1;
+	uint32_t hash = 0;
+	size_t i;
+
+	for (i = 0; i < sizeof(s1->mac); i++) {
+		hash += s1->mac.ether_addr_octet[i];
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+
+	return hash % size;
+}
+
+struct hashtable_t *orig_hash_new(const char *mesh_iface)
+{
+	struct hashtable_t *orig_hash;
 	int ret;
 
-	/* input mac has to be copied because it could be in the shared
-	 * ether_aton buffer
-	 */
-	memcpy(&in_mac, mac, sizeof(in_mac));
+	orig_hash = hash_new(64, orig_compare, orig_choose);
+	if (!orig_hash)
+		return NULL;
 
 	enable_net_admin_capability(1);
-	ret = get_tq_netlink(mesh_iface, &in_mac, &tq);
+	ret = get_tq_netlink(mesh_iface, orig_hash);
 	enable_net_admin_capability(0);
 
+	ret = -EOPNOTSUPP;
 	if (ret == -EOPNOTSUPP)
-		get_tq_debugfs(mesh_iface, &in_mac, &tq);
+		get_tq_debugfs(mesh_iface, orig_hash);
 
-	return tq;
+	return orig_hash;
+}
+
+void orig_hash_free(struct hashtable_t *orig_hash)
+{
+	hash_delete(orig_hash, free);
+}
+
+int orig_hash_add(struct hashtable_t *orig_hash, struct ether_addr *mac,
+		  uint8_t tq)
+{
+	struct orig_entry *n;
+
+	n = malloc(sizeof(*n));
+	if (!n)
+		return -ENOMEM;
+
+	n->mac = *mac;
+	n->tq = tq;
+
+	if (hash_add(orig_hash, n)) {
+		free(n);
+		return -EEXIST;
+	}
+
+	return 0;
+}
+
+uint8_t get_tq(struct hashtable_t *orig_hash, struct ether_addr *mac)
+{
+	struct orig_entry search = {
+		.mac = *mac,
+		.tq = 0,
+	};
+	struct orig_entry *found;
+
+	found = hash_find(orig_hash, &search);
+	if (!found)
+		return 0;
+
+	return found->tq;
 }

@@ -25,11 +25,11 @@
 #include <stdint.h>
 
 struct ether_addr;
+struct hashtable_t;
 
 int translate_mac_netlink(const char *mesh_iface, const struct ether_addr *mac,
 			  struct ether_addr *mac_out);
-int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
-		   uint8_t *tq);
+int get_tq_netlink(const char *mesh_iface, struct hashtable_t *orig_hash);
 int batadv_interface_check_netlink(const char *mesh_iface);
 
 #endif /* _BATADV_QUERYNL_H */

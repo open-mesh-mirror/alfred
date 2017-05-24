@@ -34,7 +34,9 @@
 #include <netlink/genl/ctrl.h>
 #include <net/ethernet.h>
 
+#include "alfred.h"
 #include "batman_adv.h"
+#include "batadv_query.h"
 #include "netlink.h"
 
 #ifndef __unused
@@ -131,9 +133,7 @@ static const int get_tq_netlink_mandatory[] = {
 };
 
 struct get_tq_netlink_opts {
-	struct ether_addr mac;
-	uint8_t tq;
-	bool found;
+	struct hashtable_t *orig_hash;
 	struct nlquery_opts query_opts;
 };
 
@@ -145,6 +145,7 @@ static int get_tq_netlink_cb(struct nl_msg *msg, void *arg)
 	struct get_tq_netlink_opts *opts;
 	struct genlmsghdr *ghdr;
 	uint8_t *orig;
+	struct ether_addr mac;
 	uint8_t tq;
 
 	opts = container_of(query_opts, struct get_tq_netlink_opts,
@@ -173,39 +174,27 @@ static int get_tq_netlink_cb(struct nl_msg *msg, void *arg)
 	if (!attrs[BATADV_ATTR_FLAG_BEST])
 		return NL_OK;
 
-	if (memcmp(&opts->mac, orig, ETH_ALEN) != 0)
-		return NL_OK;
-
-	opts->tq = tq;
-	opts->found = true;
+	memcpy(&mac, orig, sizeof(mac));
+	orig_hash_add(opts->orig_hash, &mac, tq);
 	opts->query_opts.err = 0;
 
-	return NL_STOP;
+	return NL_OK;
 }
 
-int get_tq_netlink(const char *mesh_iface, const struct ether_addr *mac,
-		   uint8_t *tq)
+int get_tq_netlink(const char *mesh_iface, struct hashtable_t *orig_hash)
 {
 	struct get_tq_netlink_opts opts = {
-		.tq = 0,
-		.found = false,
+		.orig_hash = orig_hash,
 		.query_opts = {
 			.err = 0,
 		},
 	};
 	int ret;
 
-	memcpy(&opts.mac, mac, ETH_ALEN);
-
 	ret = netlink_query_common(mesh_iface,  BATADV_CMD_GET_ORIGINATORS,
 				   get_tq_netlink_cb, &opts.query_opts);
 	if (ret < 0)
 		return ret;
-
-	if (!opts.found)
-		return -ENOENT;
-
-	*tq = opts.tq;
 
 	return 0;
 }

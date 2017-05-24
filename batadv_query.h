@@ -24,9 +24,21 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
+#include "hash.h"
+
+struct orig_entry {
+	struct ether_addr mac;
+	uint8_t tq;
+};
+
 struct ether_addr *translate_mac(const char *mesh_iface,
 				 const struct ether_addr *mac);
-uint8_t get_tq(const char *mesh_iface, struct ether_addr *mac);
+
+struct hashtable_t *orig_hash_new(const char *mesh_iface);
+void orig_hash_free(struct hashtable_t *orig_hash);
+int orig_hash_add(struct hashtable_t *orig_hash, struct ether_addr *mac,
+		  uint8_t tq);
+uint8_t get_tq(struct hashtable_t *orig_hash, struct ether_addr *mac);
 int batadv_interface_check(const char *mesh_iface);
 int mac_to_ipv6(const struct ether_addr *mac, alfred_addr *addr);
 int ipv6_to_mac(const alfred_addr *addr, struct ether_addr *mac);
