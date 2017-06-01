@@ -223,7 +223,7 @@ static void update_server_info(struct globals *globals)
 	struct hash_it_t *hashit = NULL;
 	struct interface *interface;
 	struct ether_addr *macaddr;
-	struct hashtable_t *tg_hash;
+	struct hashtable_t *tg_hash = NULL;
 	struct hashtable_t *orig_hash = NULL;
 
 	/* TQ is not used for master sync mode */
