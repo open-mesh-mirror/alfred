@@ -224,7 +224,7 @@ static void update_server_info(struct globals *globals)
 	struct interface *interface;
 	struct ether_addr *macaddr;
 	struct hashtable_t *tg_hash;
-	struct hashtable_t *orig_hash;
+	struct hashtable_t *orig_hash = NULL;
 
 	/* TQ is not used for master sync mode */
 	if (globals->opmode == OPMODE_MASTER)
