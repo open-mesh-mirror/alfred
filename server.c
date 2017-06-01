@@ -232,7 +232,7 @@ static void update_server_info(struct globals *globals)
 
 	if (strcmp(globals->mesh_iface, "none") != 0) {
 		tg_hash = tg_hash_new(globals->mesh_iface);
-		if (!globals->data_hash) {
+		if (!tg_hash) {
 			fprintf(stderr, "Failed to create translation hash\n");
 			return;
 		}
