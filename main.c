@@ -213,7 +213,8 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'r':
 			globals->clientmode = CLIENT_REQUEST_DATA;
 			i = atoi(optarg);
-			if (i < ALFRED_MAX_RESERVED_TYPE || i > 255) {
+			if (i < ALFRED_MAX_RESERVED_TYPE ||
+			    i >= ALFRED_NUM_TYPES) {
 				fprintf(stderr, "bad data type argument\n");
 				return NULL;
 			}
@@ -223,7 +224,8 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 's':
 			globals->clientmode = CLIENT_SET_DATA;
 			i = atoi(optarg);
-			if (i < ALFRED_MAX_RESERVED_TYPE || i > 255) {
+			if (i < ALFRED_MAX_RESERVED_TYPE ||
+			    i >= ALFRED_NUM_TYPES) {
 				fprintf(stderr, "bad data type argument\n");
 				return NULL;
 			}

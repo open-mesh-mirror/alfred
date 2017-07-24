@@ -177,5 +177,6 @@ struct alfred_status_v0 {
 #define ALFRED_VERSION			0
 #define ALFRED_PORT			0x4242
 #define ALFRED_MAX_RESERVED_TYPE	64
+#define ALFRED_NUM_TYPES		256
 
 #endif
