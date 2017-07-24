@@ -202,8 +202,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->update_command = NULL;
 	globals->sync_period.tv_sec = ALFRED_INTERVAL;
 	globals->sync_period.tv_nsec = 0;
-	INIT_LIST_HEAD(&globals->changed_data_types);
-	globals->changed_data_type_count = 0;
+	bitmap_zero(globals->changed_data_types, ALFRED_NUM_TYPES);
 
 	time_random_seed();
 

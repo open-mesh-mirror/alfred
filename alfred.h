@@ -31,6 +31,7 @@
 #include <time.h>
 #include <sys/select.h>
 #include <sys/types.h>
+#include "bitops.h"
 #include "list.h"
 #include "packet.h"
 
@@ -134,8 +135,7 @@ struct globals {
 	const char *unix_path;
 
 	const char *update_command;
-	struct list_head changed_data_types;
-	uint16_t changed_data_type_count; /* maximum is 256 */
+	DECLARE_BITMAP(changed_data_types, ALFRED_NUM_TYPES);
 
 	struct timespec if_check;
 	struct timespec sync_period;

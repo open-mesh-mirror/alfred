@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "alfred.h"
+#include "bitops.h"
 #include "batadv_query.h"
 #include "hash.h"
 #include "list.h"
@@ -139,23 +140,10 @@ static int set_best_server(struct globals *globals)
 
 void changed_data_type(struct globals *globals, uint8_t arg)
 {
-	struct changed_data_type *data_type = NULL;
-
 	if (!globals->update_command)
 		return;
 
-	list_for_each_entry(data_type, &globals->changed_data_types, list) {
-		if (data_type->data_type == arg)
-			return;
-	}
-
-	data_type = malloc(sizeof(*data_type));
-	if (!data_type)
-		return;
-
-	data_type->data_type = arg;
-	list_add(&data_type->list, &globals->changed_data_types);
-	globals->changed_data_type_count++;
+	set_bit(arg, globals->changed_data_types);
 }
 
 static int purge_data(struct globals *globals)
@@ -343,20 +331,27 @@ static void execute_update_command(struct globals *globals)
 	pid_t script_pid;
 	size_t command_len;
 	char *command;
-	struct changed_data_type *data_type, *is;
-	/* data type is uint8_t, so 255 is maximum (3 chars)
-	 * space for appending + terminating null byte
+	size_t data_type;
+	size_t changed_data_type_count;
+	/* data type is limited by ALFRED_NUM_TYPES to 255 (3 chars), plus
+	 * 1x space for appending + terminating null byte
 	 */
 	char buf[5];
 
-	if (!globals->update_command || !globals->changed_data_type_count)
+	if (!globals->update_command)
 		return;
+
+	if (bitmap_empty(globals->changed_data_types, ALFRED_NUM_TYPES))
+		return;
+
+	changed_data_type_count = bitmap_weight(globals->changed_data_types,
+						ALFRED_NUM_TYPES);
 
 	/* length of script + 4 bytes per data type (space +3 chars)
 	 * + 1 for terminating null byte
 	 */
 	command_len = strlen(globals->update_command);
-	command_len += 4 * globals->changed_data_type_count + 1;
+	command_len += 4 * changed_data_type_count + 1;
 	command = malloc(command_len);
 	if (!command)
 		return;
@@ -364,17 +359,14 @@ static void execute_update_command(struct globals *globals)
 	strncpy(command, globals->update_command, command_len - 1);
 	command[command_len - 1] = '\0';
 
-	list_for_each_entry_safe(data_type, is, &globals->changed_data_types,
-				 list) {
+	for_each_set_bit (data_type, globals->changed_data_types,
+			  ALFRED_NUM_TYPES) {
 		/* append the datatype to command line */
-		snprintf(buf, sizeof(buf), " %d", data_type->data_type);
+		snprintf(buf, sizeof(buf), " %zu", data_type);
 		strncat(command, buf, command_len - strlen(command) - 1);
-
-		/* clean the list */
-		list_del(&data_type->list);
-		free(data_type);
 	}
-	globals->changed_data_type_count = 0;
+
+	bitmap_zero(globals->changed_data_types, ALFRED_NUM_TYPES);
 
 	printf("executing: %s\n", command);
 
