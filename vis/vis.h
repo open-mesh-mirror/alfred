@@ -27,7 +27,7 @@
 
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2017.3"
+#define SOURCE_VERSION				"2017.4"
 #endif
 
 #define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
