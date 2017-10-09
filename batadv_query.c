@@ -308,7 +308,6 @@ struct hashtable_t *tg_hash_new(const char *mesh_iface)
 	ret = translate_mac_netlink(mesh_iface, tg_hash);
 	enable_net_admin_capability(0);
 
-	ret = -EOPNOTSUPP;
 	if (ret == -EOPNOTSUPP)
 		translate_mac_debugfs(mesh_iface, tg_hash);
 
@@ -477,7 +476,6 @@ struct hashtable_t *orig_hash_new(const char *mesh_iface)
 	ret = get_tq_netlink(mesh_iface, orig_hash);
 	enable_net_admin_capability(0);
 
-	ret = -EOPNOTSUPP;
 	if (ret == -EOPNOTSUPP)
 		get_tq_debugfs(mesh_iface, orig_hash);
 
