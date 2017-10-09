@@ -284,7 +284,7 @@ process_alfred_announce_master(struct globals *globals,
 	if (announce->header.version != ALFRED_VERSION)
 		return -1;
 
-	if (len != (sizeof(*announce) - sizeof(announce->header)))
+	if (len < (sizeof(*announce) - sizeof(announce->header)))
 		return -1;
 
 	server = hash_find(interface->server_hash, &mac);
@@ -320,7 +320,7 @@ static int process_alfred_request(struct globals *globals,
 	if (request->header.version != ALFRED_VERSION)
 		return -1;
 
-	if (len != (sizeof(*request) - sizeof(request->header)))
+	if (len < (sizeof(*request) - sizeof(request->header)))
 		return -1;
 
 	push_data(globals, interface, source, SOURCE_SYNCED,
@@ -343,7 +343,7 @@ static int process_alfred_status_txend(struct globals *globals,
 	if (request->header.version != ALFRED_VERSION)
 		return -1;
 
-	if (len != (sizeof(*request) - sizeof(request->header)))
+	if (len < (sizeof(*request) - sizeof(request->header)))
 		return -1;
 
 	if (globals->ipv4mode)
