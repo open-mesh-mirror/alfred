@@ -41,22 +41,26 @@ static int finish_alfred_push_data(struct globals *globals,
 				   struct ether_addr mac,
 				   struct alfred_push_data_v0 *push)
 {
-	int len, data_len;
+	unsigned int len, data_len;
 	bool new_entry_created;
 	struct alfred_data *data;
 	struct dataset *dataset;
 	uint8_t *pos;
 
+	/* test already done in process_alfred_push_data */
 	len = ntohs(push->header.length);
+	if (len < sizeof(*push) - sizeof(push->header))
+		return -1;
+
 	len -= sizeof(*push) - sizeof(push->header);
 	pos = (uint8_t *)push->data;
 
-	while (len >= (int)sizeof(*data)) {
+	while (len >= sizeof(*data)) {
 		data = (struct alfred_data *)pos;
 		data_len = ntohs(data->header.length);
 
 		/* check if enough data is available */
-		if ((int)(data_len + sizeof(*data)) > len)
+		if (data_len + sizeof(*data) > len)
 			break;
 
 		new_entry_created = false;
@@ -194,7 +198,7 @@ static int process_alfred_push_data(struct globals *globals,
 				    alfred_addr *source,
 				    struct alfred_push_data_v0 *push)
 {
-	int len;
+	unsigned int len;
 	struct ether_addr mac;
 	int ret;
 	struct transaction_head search, *head;
@@ -209,7 +213,7 @@ static int process_alfred_push_data(struct globals *globals,
 		goto err;
 
 	len = ntohs(push->header.length);
-	if (len < (int)(sizeof(*push) - sizeof(push->header)))
+	if (len < sizeof(*push) - sizeof(push->header))
 		goto err;
 
 	search.server_addr = mac;
@@ -310,7 +314,7 @@ static int process_alfred_request(struct globals *globals,
 				  alfred_addr *source,
 				  struct alfred_request_v0 *request)
 {
-	int len;
+	unsigned int len;
 
 	len = ntohs(request->header.length);
 
@@ -333,7 +337,8 @@ static int process_alfred_status_txend(struct globals *globals,
 {
 	struct transaction_head search, *head;
 	struct ether_addr mac;
-	int len, ret;
+	unsigned int len;
+	int ret;
 
 	len = ntohs(request->header.length);
 
