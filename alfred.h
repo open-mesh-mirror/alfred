@@ -147,6 +147,8 @@ struct globals {
 #define debugMalloc(size, num)	malloc(size)
 #define debugFree(ptr, num)	free(ptr)
 
+#define BUILD_BUG_ON(e) ((void)sizeof(char[1 - 2 * !!(e)]))
+
 #define MAX_PAYLOAD ((1 << 16) - 1 - sizeof(struct udphdr))
 
 extern alfred_addr alfred_mcast;

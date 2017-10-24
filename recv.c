@@ -270,9 +270,6 @@ process_alfred_announce_master(struct globals *globals,
 	struct server *server;
 	struct ether_addr mac;
 	int ret;
-	int len;
-
-	len = ntohs(announce->header.length);
 
 	if (globals->ipv4mode)
 		ret = ipv4_to_mac(interface, source, &mac);
@@ -284,8 +281,8 @@ process_alfred_announce_master(struct globals *globals,
 	if (announce->header.version != ALFRED_VERSION)
 		return -1;
 
-	if (len < (sizeof(*announce) - sizeof(announce->header)))
-		return -1;
+	/* skip header.length check because "announce" has no extra fields */
+	BUILD_BUG_ON(sizeof(*announce) - sizeof(announce->header) != 0);
 
 	server = hash_find(interface->server_hash, &mac);
 	if (!server) {
