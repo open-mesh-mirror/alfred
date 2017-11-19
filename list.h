@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 1991-2013 linux kernel contributors
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) 1991-2013 linux kernel contributors
  *
  * Linus Torvalds, ...
  *

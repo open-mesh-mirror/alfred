@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* Minimal Linux-like bit manipulation helper functions
  * (reduced version for alfred)
  *

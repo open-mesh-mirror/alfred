@@ -1,4 +1,5 @@
 #!/usr/bin/make -f
+# SPDX-License-Identifier: GPL-2.0
 # -*- makefile -*-
 #
 # Copyright (C) 2012-2017  B.A.T.M.A.N. contributors
