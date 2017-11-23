@@ -116,6 +116,9 @@ struct hash_it_t *hash_iterate(struct hashtable_t *hash,
 
 	if (!iter_in) {
 		iter = debugMalloc(sizeof(struct hash_it_t), 301);
+		if (!iter)
+			return NULL;
+
 		iter->index =  -1;
 		iter->bucket = NULL;
 		iter->prev_bucket = NULL;
