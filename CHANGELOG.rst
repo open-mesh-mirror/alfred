@@ -1,5 +1,17 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2017.4 (2017-12-05)
+===================
+
+* synchronization of batman-adv netlink header
+* coding style cleanups and refactoring
+* documentation cleanup
+* bugs squashed:
+
+  - only query debugfs when netlink failed
+  - handle allocation errors in hashtable iterator
+
+
 2017.3 (2017-09-28)
 ===================
 
