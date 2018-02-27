@@ -1,5 +1,12 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2018.0 (2018-02-26)
+===================
+
+* synchronization of batman-adv netlink and packet headers
+* mark licenses clearer, change batman-adv UAPI header from ISC to MIT
+* coding style cleanups and refactoring
+
 2017.4 (2017-12-05)
 ===================
 
