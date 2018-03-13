@@ -98,6 +98,8 @@ struct nla_policy batadv_netlink_policy[NUM_BATADV_ATTR] = {
 						    .minlen = ETH_ALEN,
 						    .maxlen = ETH_ALEN },
 	[BATADV_ATTR_DAT_CACHE_VID]		= { .type = NLA_U16 },
+	[BATADV_ATTR_MCAST_FLAGS]		= { .type = NLA_U32 },
+	[BATADV_ATTR_MCAST_FLAGS_PRIV]		= { .type = NLA_U32 },
 };
 
 int missing_mandatory_attrs(struct nlattr *attrs[],  const int mandatory[],
