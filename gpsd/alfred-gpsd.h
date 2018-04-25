@@ -39,7 +39,7 @@
 #include "../list.h"
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2018.1"
+#define SOURCE_VERSION				"2018.2"
 #endif
 
 #define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
