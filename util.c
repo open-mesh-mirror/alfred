@@ -30,6 +30,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 #include "alfred.h"
 
 int time_diff(struct timespec *tv1, struct timespec *tv2,
@@ -80,11 +81,35 @@ bool is_valid_ether_addr(uint8_t addr[ETH_ALEN])
 	return true;
 }
 
+static void ipv4_request_mac_resolve(const alfred_addr *addr)
+{
+	const struct sockaddr *sockaddr;
+	struct sockaddr_in inet4;
+	size_t sockaddr_len;
+	int sock;
+	char t = 0;
+
+	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock < 0)
+		return;
+
+	memset(&inet4, 0, sizeof(inet4));
+	inet4.sin_family = AF_INET;
+	inet4.sin_port = htons(9);
+	inet4.sin_addr.s_addr = addr->ipv4.s_addr;
+	sockaddr = (const struct sockaddr *)&inet4;
+	sockaddr_len = sizeof(inet4);
+
+	sendto(sock, &t, sizeof(t), 0, sockaddr, sockaddr_len);
+	close(sock);
+}
+
 int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
 		     struct ether_addr *mac)
 {
 	struct arpreq arpreq;
 	struct sockaddr_in *sin;
+	int retries = 1;
 
 	memset(&arpreq, 0, sizeof(arpreq));
 	memset(mac, 0, ETH_ALEN);
@@ -96,8 +121,13 @@ int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
 	strncpy(arpreq.arp_dev, interface->interface, sizeof(arpreq.arp_dev));
 	arpreq.arp_dev[sizeof(arpreq.arp_dev) - 1] = '\0';
 
-	if (ioctl(interface->netsock, SIOCGARP, &arpreq) < 0)
-		return -1;
+	while ((ioctl(interface->netsock, SIOCGARP, &arpreq) < 0) || !(arpreq.arp_flags & ATF_COM)) {
+		ipv4_request_mac_resolve(addr);
+		usleep(200000);
+
+		if (retries-- == 0)
+			break;
+	}
 
 	if (arpreq.arp_flags & ATF_COM) {
 		memcpy(mac, arpreq.arp_ha.sa_data, sizeof(*mac));
