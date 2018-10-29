@@ -416,6 +416,7 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 
 	packet = (struct alfred_tlv *)buf;
 
+	memset(&alfred_source, 0, sizeof(alfred_source));
 	if (globals->ipv4mode) {
 		memcpy(&alfred_source, &source4.sin_addr, sizeof(source4.sin_addr));
 	} else {
