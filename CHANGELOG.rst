@@ -1,5 +1,13 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2018.4 (2018-11-14)
+===================
+
+* bugs squashed:
+
+  - fixed detection of own IPv4 packets
+  - use manual IPv4 ARP requests to retrieve MAC of neighbors
+
 2018.3 (2018-09-14)
 ===================
 
