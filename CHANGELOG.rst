@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2019.2 (2019-05-23)
+===================
+
+* synchronization of batman-adv netlink header
+
 2019.1 (2019-03-28)
 ===================
 
