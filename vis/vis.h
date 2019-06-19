@@ -25,7 +25,6 @@
 
 #define SYS_IFACE_PATH				"/sys/class/net"
 #define DEBUG_BATIF_PATH_FMT			"%s/batman_adv/%s"
-#define SYS_MESH_IFACE_FMT			SYS_IFACE_PATH"/%s/batman_adv/mesh_iface"
 #define SYS_IFACE_STATUS_FMT			SYS_IFACE_PATH"/%s/batman_adv/iface_status"
 
 
