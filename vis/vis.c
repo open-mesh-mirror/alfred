@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <getopt.h>
+#include <linux/rtnetlink.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <signal.h>
