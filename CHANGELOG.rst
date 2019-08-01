@@ -1,5 +1,11 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2019.3 (2019-08-01)
+===================
+
+* avoid some kernel deprecation warning by using more generic netlink over
+  sysfs
+
 2019.2 (2019-05-23)
 ===================
 
