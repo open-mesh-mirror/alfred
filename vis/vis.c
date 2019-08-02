@@ -617,7 +617,7 @@ static int register_interfaces(struct globals *globals)
 	};
 
 	register_arg.ifindex = if_nametoindex(globals->interface);
-	if (!globals->interface)
+	if (!register_arg.ifindex)
 		return EXIT_FAILURE;
 
 
