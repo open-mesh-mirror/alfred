@@ -7,7 +7,7 @@
  */
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION			"2019.4"
+#define SOURCE_VERSION			"2019.5"
 #endif
 
 #include <net/ethernet.h>
