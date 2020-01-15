@@ -8,6 +8,8 @@
 
 #include "alfred-gpsd.h"
 
+#include <time.h>
+
 static struct globals gpsd_globals;
 
 static int alfred_open_sock(struct globals *globals)
@@ -64,19 +66,31 @@ static int gpsd_publish_data(struct globals *globals)
 	return 0;
 }
 
+static void gpsd_now_to_iso8601(char *tbuf, size_t len)
+{
+#if GPSD_API_MAJOR_VERSION >= 9
+	timespec_t now;
+
+	clock_gettime(CLOCK_REALTIME, &now);
+	timespec_to_iso8601(now, tbuf, len);
+#else
+	timestamp_t now = timestamp();
+	unix_to_iso8601(now, tbuf, len);
+#endif
+}
+
 static void gpsd_get_location(struct globals *globals)
 {
 	if (globals->source == SOURCE_CMDLINE) {
 		char tbuf[JSON_DATE_MAX+1];
-		timestamp_t now = timestamp();
 
+		gpsd_now_to_iso8601(tbuf, sizeof(tbuf));
 		sprintf(globals->gpsd_data->tpv,
 			"{\"class\":\"TPV\",\"device\":\"command line\","
 			"\"time\":\"%s\","
 			"\"lat\":%f,\"lon\":%f,\"alt\":%f,"
 			"\"mode\":3}",
-			unix_to_iso8601(now, tbuf, sizeof(tbuf)),
-			globals->lat, globals->lon, globals->alt);
+			tbuf, globals->lat, globals->lon, globals->alt);
 		globals->gpsd_data->tpv_len =
 			htonl(strlen(globals->gpsd_data->tpv) + 1);
 	}
