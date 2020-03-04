@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2020.0 (2020-03-04)
+===================
+
+* fix build against gpsd API 9.0
+
 2019.5 (2019-12-12)
 ===================
 
