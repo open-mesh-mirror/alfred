@@ -14,7 +14,7 @@
 
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2020.0"
+#define SOURCE_VERSION				"2020.1"
 #endif
 
 #define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
