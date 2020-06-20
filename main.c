@@ -34,8 +34,8 @@ static void alfred_usage(void)
 	printf("                                      it on the network\n");
 	printf("  -d, --verbose                       Show extra information in the data output\n");
 	printf("  -V, --req-version                   specify the data version set for -s\n");
-	printf("  -M, --modeswitch master             switch daemon to mode master\n");
-	printf("                   slave              switch daemon to mode slave\n");
+	printf("  -M, --modeswitch primary            switch daemon to mode primary\n");
+	printf("                   secondary          switch daemon to mode secondary\n");
 	printf("  -I, --change-interface [interface]  change to the specified interface(s)\n");
 	printf("\n");
 	printf("server mode options:\n");
@@ -44,9 +44,9 @@ static void alfred_usage(void)
 	printf("                                      configured on the system (default: bat0)\n");
 	printf("                                      use 'none' to disable the batman-adv\n");
 	printf("                                      based best server selection\n");
-	printf("  -m, --master                        start up the daemon in master mode, which\n");
-	printf("                                      accepts data from slaves and syncs it with\n");
-	printf("                                      other masters\n");
+	printf("  -m, --primary                       start up the daemon in primary mode, which\n");
+	printf("                                      accepts data from secondaries and syncs it with\n");
+	printf("                                      other primaries\n");
 	printf("  -p, --sync-period [period]          set synchronization period, in seconds\n");
 	printf("                                      fractional seconds are supported (i.e. 0.2 = 5 Hz)\n");
 	printf("  -4 [group-address]                  specify IPv4 multicast address and operate in IPv4 mode");
@@ -154,6 +154,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"request",		required_argument,	NULL,	'r'},
 		{"interface",		required_argument,	NULL,	'i'},
 		{"master",		no_argument,		NULL,	'm'},
+		{"primary",		no_argument,		NULL,	'm'},
 		{"help",		no_argument,		NULL,	'h'},
 		{"req-version",		required_argument,	NULL,	'V'},
 		{"modeswitch",		required_argument,	NULL,	'M'},
@@ -178,7 +179,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	INIT_LIST_HEAD(&globals->interfaces);
 	globals->change_interface = NULL;
-	globals->opmode = OPMODE_SLAVE;
+	globals->opmode = OPMODE_SECONDARY;
 	globals->clientmode = CLIENT_NONE;
 	globals->best_server = NULL;
 	globals->clientmode_version = 0;
@@ -218,7 +219,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->clientmode_arg = i;
 			break;
 		case 'm':
-			globals->opmode = OPMODE_MASTER;
+			globals->opmode = OPMODE_PRIMARY;
 			break;
 		case 'i':
 			netsock_set_interfaces(globals, optarg);
@@ -235,10 +236,12 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->clientmode_version = atoi(optarg);
 			break;
 		case 'M':
-			if (strcmp(optarg, "master") == 0) {
-				globals->opmode = OPMODE_MASTER;
-			} else if (strcmp(optarg, "slave") == 0) {
-				globals->opmode = OPMODE_SLAVE;
+			if (strcmp(optarg, "master") == 0 ||
+			    strcmp(optarg, "primary") == 0) {
+				globals->opmode = OPMODE_PRIMARY;
+			} else if (strcmp(optarg, "slave") == 0 ||
+				   strcmp(optarg, "secondary") == 0) {
+				globals->opmode = OPMODE_SECONDARY;
 			} else {
 				fprintf(stderr, "bad modeswitch argument\n");
 				return NULL;

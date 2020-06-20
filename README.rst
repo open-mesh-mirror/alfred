@@ -86,26 +86,26 @@ list of options, run alfred -h):
   -b                          specify the batman-adv interface configured on
                               the system (default: bat0). use 'none' to disable
                               the batman-adv based best server selection
-  -m, --master                start up the daemon in master mode, which
-                              accepts data from slaves and syncs it with
-                              other masters
+  -m, --primary               start up the daemon in primary mode, which
+                              accepts data from secondaries and syncs it with
+                              other primaries
 
 The -b option is optional, and only needed if you run alfred on a batman-adv
 interface not called bat0, or if you don't use batman-adv at all
 (use '-b none'). In this case, alfred will still work but will not be able to
-find the best next master server based on metrics.
+find the best next primary server based on metrics.
 
-alfred servers may either run as master or slave in the network. Masters will
-announce their status via broadcast, so that slaves can find them. Slaves will
-then send their data to their nearest master (based on TQ). Masters will
-exchange their data (which they have received from slaves or got on their own)
-with other masters. By using masters and slaves, overhead can be reduced while
-still keeping redundancy (by having multiple masters). Obviously, at least one
-master must be present in the network to let any data exchange happen. Also
-having all nodes in master mode is possible (for maximum decentrality and
-overhead).
+alfred servers may either run as primary or secondary in the network. Primaries
+will announce their status via broadcast, so that secondaries can find them.
+Secondaries will then send their data to their nearest primary (based on TQ).
+Primaries will exchange their data (which they have received from secondaries or
+got on their own) with other primaries. By using primaries and secondaries,
+overhead can be reduced while still keeping redundancy (by having multiple
+primaries). Obviously, at least one primary must be present in the network to
+let any data exchange happen. Also having all nodes in primary mode is possible
+(for maximum decentrality and overhead).
 
-To put it together, let us start alfred in master mode on our bridge br0
+To put it together, let us start alfred in primary mode on our bridge br0
 (assuming that this bridge includes the batman interface bat0)::
 
   $ alfred -i br0 -m
@@ -135,9 +135,9 @@ it will timeout and alfred will forget about it (after 10 minutes).
 
 One final remark on terminology: If we talk about "servers" and "clients" in
 alfred, we mean the local processes on one machine which talk to each other via
-unix sockets (client connects and talks to servers). On the other hand, "slaves"
-and "masters" are the roles alfred can take over in the network between different
-machines (slaves send information to masters).
+unix sockets (client connects and talks to servers). On the other hand, "secondaries"
+and "primaries" are the roles alfred can take over in the network between different
+machines (secondaries send information to primaries).
 
 
 Vis

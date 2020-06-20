@@ -19,13 +19,13 @@
 #include "packet.h"
 #include "list.h"
 
-int announce_master(struct globals *globals)
+int announce_primary(struct globals *globals)
 {
-	struct alfred_announce_master_v0 announcement;
+	struct alfred_announce_primary_v0 announcement;
 	struct interface *interface;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
-		announcement.header.type = ALFRED_ANNOUNCE_MASTER;
+		announcement.header.type = ALFRED_ANNOUNCE_PRIMARY;
 		announcement.header.version = ALFRED_VERSION;
 		announcement.header.length = htons(0);
 

@@ -110,13 +110,13 @@ static int unix_sock_add_data(struct globals *globals,
 	/* clients should set the source mac to 00:00:00:00:00:00
 	 * to make the server set the source for them
 	 *
-	 * Only alfred in master mode can accept a user defined
+	 * Only alfred in primary mode can accept a user defined
 	 * source addresses. Otherwise the data would not be
-	 * synced between master servers.
+	 * synced between primary servers.
 	 */
 	if (is_valid_ether_addr(data->source)) {
 		if (memcmp(data->source, &interface->hwaddr, ETH_ALEN) != 0 &&
-		    globals->opmode != OPMODE_MASTER)
+		    globals->opmode != OPMODE_PRIMARY)
 			goto err;
 	} else {
 		memcpy(data->source, &interface->hwaddr, ETH_ALEN);
@@ -233,8 +233,8 @@ static int unix_sock_req_data(struct globals *globals,
 		return unix_sock_req_data_reply(globals, client_sock, id,
 						request->requested_type);
 
-	/* a master already has data to respond with */
-	if (globals->opmode == OPMODE_MASTER)
+	/* a primary already has data to respond with */
+	if (globals->opmode == OPMODE_PRIMARY)
 		return unix_sock_req_data_reply(globals, client_sock, id,
 						request->requested_type);
 
@@ -298,14 +298,14 @@ static int unix_sock_modesw(struct globals *globals,
 		goto err;
 
 	switch (modeswitch->mode) {
-	case ALFRED_MODESWITCH_SLAVE:
+	case ALFRED_MODESWITCH_SECONDARY:
 		if (!list_is_singular(&globals->interfaces))
 			goto err;
 
-		globals->opmode = OPMODE_SLAVE;
+		globals->opmode = OPMODE_SECONDARY;
 		break;
-	case ALFRED_MODESWITCH_MASTER:
-		globals->opmode = OPMODE_MASTER;
+	case ALFRED_MODESWITCH_PRIMARY:
+		globals->opmode = OPMODE_PRIMARY;
 		break;
 	default:
 		goto err;
@@ -329,10 +329,10 @@ unix_sock_change_iface(struct globals *globals,
 	if (len < (int)(sizeof(*change_iface) - sizeof(change_iface->header)))
 		goto err;
 
-	if (globals->opmode == OPMODE_SLAVE) {
+	if (globals->opmode == OPMODE_SECONDARY) {
 		if (strstr(change_iface->ifaces, ",") != NULL) {
 			ret = -EINVAL;
-			fprintf(stderr, "Tried to set multiple interfaces in slave mode\n");
+			fprintf(stderr, "Tried to set multiple interfaces in secondary mode\n");
 			goto err;
 		}
 	}

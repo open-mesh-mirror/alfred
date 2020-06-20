@@ -53,7 +53,7 @@ struct alfred_transaction_mgmt {
 /**
  * enum alfred_packet_type - Types of packet stored in the main alfred_tlv
  * @ALFRED_PUSH_DATA: Packet is an alfred_push_data_v*
- * @ALFRED_ANNOUNCE_MASTER: Packet is an alfred_announce_master_v*
+ * @ALFRED_ANNOUNCE_PRIMARY: Packet is an alfred_announce_primary_v*
  * @ALFRED_REQUEST: Packet is an alfred_request_v*
  * @ALFRED_STATUS_TXEND: Transaction was finished by sender
  * @ALFRED_STATUS_ERROR: Error was detected during the transaction
@@ -62,7 +62,7 @@ struct alfred_transaction_mgmt {
  */
 enum alfred_packet_type {
 	ALFRED_PUSH_DATA = 0,
-	ALFRED_ANNOUNCE_MASTER = 1,
+	ALFRED_ANNOUNCE_PRIMARY = 1,
 	ALFRED_REQUEST = 2,
 	ALFRED_STATUS_TXEND = 3,
 	ALFRED_STATUS_ERROR = 4,
@@ -89,13 +89,13 @@ struct alfred_push_data_v0 {
 } __packed;
 
 /**
- * struct alfred_announce_master_v0 - Hello packet sent by an alfred master
+ * struct alfred_announce_primary_v0 - Hello packet sent by an alfred primary
  * @header: TLV header describing the complete packet
  *
- * Each alfred daemon running in master mode sends it using multicast. The
+ * Each alfred daemon running in primary mode sends it using multicast. The
  * receiver has to calculate the source using the network header
  */
-struct alfred_announce_master_v0 {
+struct alfred_announce_primary_v0 {
 	struct alfred_tlv header;
 } __packed;
 
@@ -115,12 +115,12 @@ struct alfred_request_v0 {
 
 /**
  * enum alfred_modeswitch_type - Mode of the daemon
- * @ALFRED_MODESWITCH_SLAVE: see OPMODE_SLAVE
- * @ALFRED_MODESWITCH_MASTER: see OPMODE_MASTER
+ * @ALFRED_MODESWITCH_SECONDARY: see OPMODE_SECONDARY
+ * @ALFRED_MODESWITCH_PRIMARY: see OPMODE_PRIMARY
  */
 enum alfred_modeswitch_type {
-	ALFRED_MODESWITCH_SLAVE = 0,
-	ALFRED_MODESWITCH_MASTER = 1,
+	ALFRED_MODESWITCH_SECONDARY = 0,
+	ALFRED_MODESWITCH_PRIMARY = 1,
 };
 
 /**

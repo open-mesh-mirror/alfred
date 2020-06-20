@@ -79,8 +79,8 @@ struct server {
 };
 
 enum opmode {
-	OPMODE_SLAVE,
-	OPMODE_MASTER,
+	OPMODE_SECONDARY,
+	OPMODE_PRIMARY,
 };
 
 enum clientmode {
@@ -166,7 +166,7 @@ static inline bool transaction_finished(struct transaction_head *head)
 int push_data(struct globals *globals, struct interface *interface,
 	      alfred_addr *destination, enum data_source max_source_level,
 	      int type_filter, uint16_t tx_id);
-int announce_master(struct globals *globals);
+int announce_primary(struct globals *globals);
 int push_local_data(struct globals *globals);
 int sync_data(struct globals *globals);
 ssize_t send_alfred_packet(struct globals *globals, struct interface *interface,

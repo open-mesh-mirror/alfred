@@ -201,8 +201,8 @@ static void update_server_info(struct globals *globals)
 	struct hashtable_t *tg_hash = NULL;
 	struct hashtable_t *orig_hash = NULL;
 
-	/* TQ is not used for master sync mode */
-	if (globals->opmode == OPMODE_MASTER)
+	/* TQ is not used for primary sync mode */
+	if (globals->opmode == OPMODE_PRIMARY)
 		return;
 
 	if (strcmp(globals->mesh_iface, "none") != 0) {
@@ -394,8 +394,8 @@ int alfred_server(struct globals *globals)
 		return -1;
 	}
 
-	if (num_socks > 1 && globals->opmode == OPMODE_SLAVE) {
-		fprintf(stderr, "More than one interface specified in slave mode\n");
+	if (num_socks > 1 && globals->opmode == OPMODE_SECONDARY) {
+		fprintf(stderr, "More than one interface specified in secondary mode\n");
 		return -1;
 	}
 
@@ -447,10 +447,10 @@ int alfred_server(struct globals *globals)
 		}
 		clock_gettime(CLOCK_MONOTONIC, &last_check);
 
-		if (globals->opmode == OPMODE_MASTER) {
-			/* we are a master */
-			printf("[%ld.%09ld] announce master ...\n", last_check.tv_sec, last_check.tv_nsec);
-			announce_master(globals);
+		if (globals->opmode == OPMODE_PRIMARY) {
+			/* we are a primary */
+			printf("[%ld.%09ld] announce primary ...\n", last_check.tv_sec, last_check.tv_nsec);
+			announce_primary(globals);
 			sync_data(globals);
 		} else {
 			/* send local data to server */

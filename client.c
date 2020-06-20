@@ -194,11 +194,11 @@ int alfred_client_modeswitch(struct globals *globals)
 	modeswitch->header.length = htons(len - sizeof(modeswitch->header));
 
 	switch (globals->opmode) {
-	case OPMODE_SLAVE:
-		modeswitch->mode = ALFRED_MODESWITCH_SLAVE;
+	case OPMODE_SECONDARY:
+		modeswitch->mode = ALFRED_MODESWITCH_SECONDARY;
 		break;
-	case OPMODE_MASTER:
-		modeswitch->mode = ALFRED_MODESWITCH_MASTER;
+	case OPMODE_PRIMARY:
+		modeswitch->mode = ALFRED_MODESWITCH_PRIMARY;
 		break;
 	default:
 		fprintf(stderr, "%s: unknown opmode %u in modeswitch\n",

@@ -80,10 +80,10 @@ to 0 ('\fB\-V\fP 0').
 .TP
 \fB\-M\fP, \fB\-\-modeswitch\fP \fImode\fP
 .nf
-\fBmaster\fP
-    Switch daemon to mode master
-\fBslave\fP
-    Switch daemon to mode slave
+\fBprimary\fP
+    Switch daemon to mode primary
+\fBsecondary\fP
+    Switch daemon to mode secondary
 .fi
 .TP
 \fB\-I\fP, \fB\-\-change\-interface\fP \fIinterface\fP
@@ -101,21 +101,21 @@ Use 'none' to disable the batman-adv based best server selection.
 The \fB\-b\fP option is optional, and only needed if you run alfred on a
 batman-adv interface not called bat0, or if you don't use batman-adv at all
 (use '\fB\-b\fP none'). In this case, alfred will still work but will not be
-able to find the best next master server based on metrics.
+able to find the best next primary server based on metrics.
 .TP
-\fB\-m\fP, \fB\-\-master\fP
-Start up the daemon in master mode, which accepts data from slaves and syncs
-it with other masters.
+\fB\-m\fP, \fB\-\-primary\fP
+Start up the daemon in primary mode, which accepts data from secondaries and
+syncs it with other primaries.
 
-alfred servers may either run as master or slave in the network. Masters will
-announce their status via broadcast, so that slaves can find them. Slaves will
-then send their data to their nearest master (based on TQ). Masters will
-exchange their data (which they have received from slaves or got on their own)
-with other masters. By using masters and slaves, overhead can be reduced while
-still keeping redundancy (by having multiple masters). Obviously, at least one
-master must be present in the network to let any data exchange happen. Also
-having all nodes in master mode is possible (for maximum decentrality and
-overhead).
+alfred servers may either run as primary or secondary in the network. Primaries
+will announce their status via broadcast, so that secondaries can find them.
+Secondaries will then send their data to their nearest primary (based on TQ).
+Primaries will exchange their data (which they have received from secondaries or
+got on their own) with other primaries. By using primaries and secondaries,
+overhead can be reduced while still keeping redundancy (by having multiple
+primaries). Obviously, at least one primary must be present in the network to
+let any data exchange happen. Also having all nodes in primary mode is possible
+(for maximum decentrality and overhead).
 .TP
 \fB\-c\fP, \fB\-\-update-command\fP \fIcommand\fP
 Specify command to execute on data change. It will be called with data-type list

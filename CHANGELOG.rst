@@ -93,7 +93,7 @@
 2017.2 (2017-07-28)
 ===================
 
-* reduce cpu load when rating multiple master servers
+* reduce cpu load when rating multiple primary servers
 * coding style cleanups and refactoring
 
 
@@ -142,7 +142,7 @@
 2016.1 (2016-04-21)
 ===================
 
-* add support for master servers to receive push_data packets with foreign
+* add support for primary servers to receive push_data packets with foreign
   source addresses
 * various code cleanups
 * bugs squashed:
@@ -190,7 +190,7 @@
 2014.4.0 (2014-12-31)
 =====================
 
-* add support for multiple interfaces per master
+* add support for multiple interfaces per primary
 * add support for changing interfaces on the fly
 * changes to support multiple alfred interfaces:
 
@@ -235,7 +235,7 @@
 * add new json output format for vis
 * add gps location information service for alfred
 * allow network interface to vanish and return without restart
-* allow to switch between master and slave operation without restart
+* allow to switch between primary and secondary operation without restart
 * renamed vis to batadv-vis to avoid collisions with other vis binaries
 * add manpages
 * various code cleanups
@@ -255,5 +255,5 @@
   to visualize the network) included
 * easy but flexible communication interface to allow data applications
   of all kinds
-* two-tiered architecture (master and slaves)
+* two-tiered architecture (primary and secondaries)
 * exchanges data via IPv6 unicast/multicast

@@ -208,9 +208,9 @@ static int process_alfred_push_data(struct globals *globals,
 
 	head = hash_find(globals->transaction_hash, &search);
 	if (!head) {
-		/* slave must create the transactions to be able to correctly
-		 *  wait for it */
-		if (globals->opmode != OPMODE_MASTER)
+		/* secondary must create the transactions to be able to
+		 * correctly wait for it */
+		if (globals->opmode != OPMODE_PRIMARY)
 			goto err;
 
 		head = transaction_add(globals, mac, ntohs(push->tx.id));
@@ -253,10 +253,10 @@ err:
 }
 
 static int
-process_alfred_announce_master(struct globals *globals,
-			       struct interface *interface,
-			       alfred_addr *source,
-			       struct alfred_announce_master_v0 *announce)
+process_alfred_announce_primary(struct globals *globals,
+				struct interface *interface,
+				alfred_addr *source,
+				struct alfred_announce_primary_v0 *announce)
 {
 	struct server *server;
 	struct ether_addr mac;
@@ -347,9 +347,9 @@ static int process_alfred_status_txend(struct globals *globals,
 
 	head = hash_find(globals->transaction_hash, &search);
 	if (!head) {
-		/* slave must create the transactions to be able to correctly
-		 *  wait for it */
-		if (globals->opmode != OPMODE_MASTER)
+		/* secondary must create the transactions to be able to
+		 * correctly wait for it */
+		if (globals->opmode != OPMODE_PRIMARY)
 			goto err;
 
 		/* 0-packet txend for unknown transaction */
@@ -431,10 +431,10 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 		process_alfred_push_data(globals, interface, &alfred_source,
 					 (struct alfred_push_data_v0 *)packet);
 		break;
-	case ALFRED_ANNOUNCE_MASTER:
-		process_alfred_announce_master(globals, interface,
-					       &alfred_source,
-					       (struct alfred_announce_master_v0 *)packet);
+	case ALFRED_ANNOUNCE_PRIMARY:
+		process_alfred_announce_primary(globals, interface,
+						&alfred_source,
+						(struct alfred_announce_primary_v0 *)packet);
 		break;
 	case ALFRED_REQUEST:
 		process_alfred_request(globals, interface, &alfred_source,
