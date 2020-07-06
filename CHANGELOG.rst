@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2020.2 (2020-07-06)
+===================
+
+* Rephrase names of server roles
+
 2020.1 (2020-04-24)
 ===================
 
