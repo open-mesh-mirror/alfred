@@ -8,7 +8,6 @@
 
 # batadv-vis build
 BINARY_NAME = batadv-vis
-OBJ += debugfs.o
 OBJ += netlink.o
 OBJ += vis.o
 MANPAGE = man/batadv-vis.8

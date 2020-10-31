@@ -290,7 +290,7 @@ Operations requiring special capabilities:
 
 * bind to device
 * creating the unix socket
-* accessing the debugfs filesystem
+* accessing the netlink interface
 
 The first operation can still be executed when the admin grants the special
 capability CAP_NET_RAW+CAP_NET_ADMIN to anyone executing the alfred binary.
@@ -299,11 +299,6 @@ directory which can be accessed by the user::
 
   $ sudo setcap cap_net_admin,cap_net_raw+ep alfred
   $ ./alfred -u alfred.sock -i eth0
-
-The user running alfred must still be in a group which is allowed to access
-/sys/kernel/debugfs to correctly choose best neighbors for communication.
-It is possible (but not recommended) to disable the neighbor
-selection/prioritization using the parameter '-b none'.
 
 
 License

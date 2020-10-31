@@ -22,11 +22,6 @@
 #include <sys/types.h>
 
 #include "batadv_querynl.h"
-#include "debugfs.h"
-
-#define DEBUG_BATIF_PATH_FMT "%s/batman_adv/%s"
-#define DEBUG_TRANSTABLE_GLOBAL "transtable_global"
-#define DEBUG_ORIGINATORS "originators"
 
 static int enable_net_admin_capability(int enable)
 {
@@ -135,36 +130,6 @@ int ipv4_to_mac(struct interface *interface,
 	return 0;
 }
 
-static int batadv_interface_check_debugfs(const char *mesh_iface)
-{
-	char full_path[MAX_PATH + 1];
-	FILE *f;
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
-			  mesh_iface, full_path, sizeof(full_path));
-	f = fopen(full_path, "r");
-	if (!f) {
-		fprintf(stderr,
-			"Could not find %s for interface %s. Make sure it is a valid batman-adv soft-interface\n",
-			DEBUG_TRANSTABLE_GLOBAL, mesh_iface);
-		return -1;
-	}
-	fclose(f);
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_ORIGINATORS,
-			  mesh_iface, full_path, sizeof(full_path));
-	f = fopen(full_path, "r");
-	if (!f) {
-		fprintf(stderr,
-			"Could not find %s for interface %s. Make sure it is a valid batman-adv soft-interface\n",
-			DEBUG_ORIGINATORS, mesh_iface);
-		return -1;
-	}
-	fclose(f);
-
-	return 0;
-}
-
 int batadv_interface_check(const char *mesh_iface)
 {
 	int ret;
@@ -173,84 +138,7 @@ int batadv_interface_check(const char *mesh_iface)
 	ret = batadv_interface_check_netlink(mesh_iface);
 	enable_net_admin_capability(0);
 
-	if (ret == -EOPNOTSUPP)
-		ret = batadv_interface_check_debugfs(mesh_iface);
-
 	return ret;
-}
-
-static int translate_mac_debugfs(const char *mesh_iface,
-				 struct hashtable_t *tg_hash)
-{
-	enum {
-		tg_start,
-		tg_mac,
-		tg_via,
-		tg_originator,
-	} pos;
-	char full_path[MAX_PATH+1];
-	struct ether_addr *mac_tmp;
-	struct ether_addr mac;
-	FILE *f = NULL;
-	size_t len = 0;
-	char *line = NULL;
-	char *input, *saveptr, *token;
-	int line_invalid;
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_TRANSTABLE_GLOBAL,
-			  mesh_iface, full_path, sizeof(full_path));
-
-	f = fopen(full_path, "r");
-	if (!f)
-		return -EOPNOTSUPP;
-
-	while (getline(&line, &len, f) != -1) {
-		line_invalid = 0;
-		pos = tg_start;
-		input = line;
-
-		while ((token = strtok_r(input, " \t", &saveptr))) {
-			input = NULL;
-
-			switch (pos) {
-			case tg_start:
-				if (strcmp(token, "*") != 0)
-					line_invalid = 1;
-				else
-					pos = tg_mac;
-				break;
-			case tg_mac:
-				mac_tmp = ether_aton(token);
-				if (!mac_tmp) {
-					line_invalid = 1;
-				} else {
-					memcpy(&mac, mac_tmp, sizeof(mac));
-					pos = tg_via;
-				}
-				break;
-			case tg_via:
-				if (strcmp(token, "via") == 0)
-					pos = tg_originator;
-				break;
-			case tg_originator:
-				mac_tmp = ether_aton(token);
-				if (!mac_tmp)
-					line_invalid = 1;
-				else
-					tg_hash_add(tg_hash, &mac, mac_tmp);
-				break;
-			}
-
-			if (line_invalid)
-				break;
-		}
-	}
-
-	if (f)
-		fclose(f);
-	free(line);
-
-	return 0;
 }
 
 static int tg_compare(void *d1, void *d2)
@@ -285,18 +173,14 @@ static int tg_choose(void *d1, int size)
 struct hashtable_t *tg_hash_new(const char *mesh_iface)
 {
 	struct hashtable_t *tg_hash;
-	int ret;
 
 	tg_hash = hash_new(64, tg_compare, tg_choose);
 	if (!tg_hash)
 		return NULL;
 
 	enable_net_admin_capability(1);
-	ret = translate_mac_netlink(mesh_iface, tg_hash);
+	translate_mac_netlink(mesh_iface, tg_hash);
 	enable_net_admin_capability(0);
-
-	if (ret == -EOPNOTSUPP)
-		translate_mac_debugfs(mesh_iface, tg_hash);
 
 	return tg_hash;
 }
@@ -341,86 +225,6 @@ struct ether_addr *translate_mac(struct hashtable_t *tg_hash,
 	return &found->originator;
 }
 
-static int get_tq_debugfs(const char *mesh_iface, struct hashtable_t *orig_hash)
-{
-	enum {
-		orig_mac,
-		orig_lastseen,
-		orig_tqstart,
-		orig_tqvalue,
-	} pos;
-	char full_path[MAX_PATH + 1];
-	struct ether_addr *mac_tmp;
-	FILE *f = NULL;
-	size_t len = 0;
-	char *line = NULL;
-	char *input, *saveptr, *token;
-	int line_invalid;
-	uint8_t tq;
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" DEBUG_ORIGINATORS,
-			  mesh_iface, full_path, sizeof(full_path));
-
-	f = fopen(full_path, "r");
-	if (!f)
-		return -EOPNOTSUPP;
-
-	while (getline(&line, &len, f) != -1) {
-		line_invalid = 0;
-		pos = orig_mac;
-		input = line;
-
-		while ((token = strtok_r(input, " \t", &saveptr))) {
-			input = NULL;
-
-			switch (pos) {
-			case orig_mac:
-				mac_tmp = ether_aton(token);
-				if (!mac_tmp)
-					line_invalid = 1;
-				else
-					pos = orig_lastseen;
-				break;
-			case orig_lastseen:
-				pos = orig_tqstart;
-				break;
-			case orig_tqstart:
-				if (strlen(token) == 0) {
-					line_invalid = 1;
-					break;
-				} else if (token[0] != '(') {
-					line_invalid = 1;
-					break;
-				} else if (strlen(token) == 1) {
-					pos = orig_tqvalue;
-					break;
-				}
-
-				token++;
-				/* fall through */
-			case orig_tqvalue:
-				if (token[strlen(token) - 1] != ')') {
-					line_invalid = 1;
-				} else {
-					token[strlen(token) - 1] = '\0';
-					tq = strtol(token, NULL, 10);
-					orig_hash_add(orig_hash, mac_tmp, tq);
-				}
-				break;
-			}
-
-			if (line_invalid)
-				break;
-		}
-	}
-
-	if (f)
-		fclose(f);
-	free(line);
-
-	return 0;
-}
-
 static int orig_compare(void *d1, void *d2)
 {
 	struct orig_entry *s1 = d1, *s2 = d2;
@@ -453,18 +257,14 @@ static int orig_choose(void *d1, int size)
 struct hashtable_t *orig_hash_new(const char *mesh_iface)
 {
 	struct hashtable_t *orig_hash;
-	int ret;
 
 	orig_hash = hash_new(64, orig_compare, orig_choose);
 	if (!orig_hash)
 		return NULL;
 
 	enable_net_admin_capability(1);
-	ret = get_tq_netlink(mesh_iface, orig_hash);
+	get_tq_netlink(mesh_iface, orig_hash);
 	enable_net_admin_capability(0);
-
-	if (ret == -EOPNOTSUPP)
-		get_tq_debugfs(mesh_iface, orig_hash);
 
 	return orig_hash;
 }

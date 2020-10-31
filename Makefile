@@ -11,7 +11,6 @@ BINARY_NAME = alfred
 OBJ += batadv_query.o
 OBJ += batadv_querynl.o
 OBJ += client.o
-OBJ += debugfs.o
 OBJ += hash.o
 OBJ += main.o
 OBJ += netlink.o

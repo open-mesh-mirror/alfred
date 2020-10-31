@@ -18,7 +18,6 @@
 #include <unistd.h>
 #endif
 #include "alfred.h"
-#include "debugfs.h"
 #include "packet.h"
 #include "list.h"
 
@@ -166,9 +165,6 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"sync-period",		required_argument,	NULL,	'p'},
 		{NULL,			0,			NULL,	0},
 	};
-
-	/* We need full capabilities to mount debugfs, so do that now */
-	debugfs_mount(NULL);
 
 	ret = reduce_capabilities();
 	if (ret < 0)

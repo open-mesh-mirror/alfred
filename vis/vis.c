@@ -26,7 +26,6 @@
 
 #include "batman_adv.h"
 #include "netlink.h"
-#include "debugfs.h"
 
 #define IFACE_STATUS_LEN 256
 
@@ -76,25 +75,6 @@ static char *mac_to_str(uint8_t *mac)
 	snprintf(macstr, sizeof(macstr), "%02x:%02x:%02x:%02x:%02x:%02x",
 		 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 	return macstr;
-}
-
-static uint8_t *str_to_mac(char *str)
-{
-	static uint8_t mac[ETH_ALEN];
-	int ret;
-
-	if (!str)
-		return NULL;
-
-	ret = sscanf(str,
-		"%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
-		&mac[0], &mac[1], &mac[2],
-		&mac[3], &mac[4], &mac[5]);
-	
-	if (ret != 6)
-		return NULL;
-	
-	return mac;
 }
 
 static int get_if_mac(char *ifname, uint8_t *mac)
@@ -274,7 +254,7 @@ static int parse_transtable_local_netlink_cb(struct nl_msg *msg, void *arg)
 	return NL_OK;
 }
 
-static int parse_transtable_local_netlink(struct globals *globals)
+static int parse_transtable_local(struct globals *globals)
 {
 	struct vis_netlink_opts opts = {
 		.globals = globals,
@@ -292,69 +272,6 @@ static int parse_transtable_local_netlink(struct globals *globals)
 		return ret;
 
 	return 0;
-}
-
-static int parse_transtable_local_debugfs(struct globals *globals)
-{
-	char *fbuf;
-	char *lptr, *tptr;
-	char *temp1, *temp2;
-	int lnum, tnum;
-	uint8_t *mac;
-	struct vis_list_entry *v_entry;
-	char path[1024];
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" "transtable_local", globals->interface, path, sizeof(path));
-	path[sizeof(path) - 1] = 0;
-
-	fbuf = read_file(path);
-	if (!fbuf)
-		return -1;
-
-	for (lptr = fbuf, lnum = 0; ; lptr = NULL, lnum++) {
-		lptr = strtok_r(lptr, "\n", &temp1);
-		if (!lptr)
-			break;
-
-		if (lnum < 1)
-			continue;
-
-		for (tptr = lptr, tnum = 0;; tptr = NULL, tnum++) {
-			tptr = strtok_r(tptr, "\t ", &temp2);
-			if (!tptr)
-				break;
-			if (tnum == 1) {
-				v_entry = malloc(sizeof(*v_entry));
-				if (!v_entry)
-					continue;
-
-				mac = str_to_mac(tptr);
-				if (!mac) {
-					free(v_entry);
-					continue;
-				}
-
-				memcpy(v_entry->v.mac, mac, ETH_ALEN);
-				v_entry->v.ifindex = 255;
-				v_entry->v.qual = 0;
-				list_add_tail(&v_entry->list, &globals->entry_list);
-			}
-		}
-	}
-	free(fbuf);
-
-	return 0;
-}
-
-static int parse_transtable_local(struct globals *globals)
-{
-	int ret;
-
-	ret = parse_transtable_local_netlink(globals);
-	if (ret != -EOPNOTSUPP)
-		return ret;
-
-	return parse_transtable_local_debugfs(globals);
 }
 
 static void clear_lists(struct globals *globals)
@@ -693,7 +610,7 @@ static int parse_orig_list_netlink_cb(struct nl_msg *msg, void *arg)
 	return NL_OK;
 }
 
-static int parse_orig_list_netlink(struct globals *globals)
+static int parse_orig_list(struct globals *globals)
 {
 	struct vis_netlink_opts opts = {
 		.globals = globals,
@@ -710,84 +627,6 @@ static int parse_orig_list_netlink(struct globals *globals)
 		return ret;
 
 	return 0;
-}
-
-static int parse_orig_list_debugfs(struct globals *globals)
-{
-	char *fbuf;
-	char *lptr, *tptr;
-	char *temp1, *temp2;
-	char *dest, *tq, *neigh, *iface;
-	int lnum, tnum, ifindex, tq_val;
-	uint8_t *mac;
-	char path[1024];
-	struct vis_list_entry *v_entry;
-
-	debugfs_make_path(DEBUG_BATIF_PATH_FMT "/" "originators", globals->interface, path, sizeof(path));
-	fbuf = read_file(path);
-	if (!fbuf)
-		return -1;
-
-	for (lptr = fbuf, lnum = 0; ; lptr = NULL, lnum++) {
-		lptr = strtok_r(lptr, "\n", &temp1);
-		if (!lptr)
-			break;
-		if (lnum < 2)
-			continue;
-
-		for (tptr = lptr, tnum = 0;; tptr = NULL, tnum++) {
-			tptr = strtok_r(tptr, "\t []()", &temp2);
-			if (!tptr)
-				break;
-			switch (tnum) {
-			case 0: dest = tptr; break;
-			case 2: tq = tptr; break;
-			case 3: neigh = tptr; break;
-			case 4: iface = tptr; break;
-			default: break;
-			}
-		}
-		if (tnum > 4) {
-			if (strcmp(dest, neigh) == 0) {
-				tq_val = strtol(tq, NULL, 10);
-				if (tq_val < 1 || tq_val > 255)
-					continue;
-
-				mac = str_to_mac(dest);
-				if (!mac)
-					continue;
-
-				ifindex = get_if_index_byname(globals, iface);
-				if (ifindex < 0)
-					continue;
-
-				v_entry = malloc(sizeof(*v_entry));
-				if (!v_entry)
-					continue;
-
-				memcpy(v_entry->v.mac, mac, ETH_ALEN);
-				v_entry->v.ifindex = ifindex;
-				v_entry->v.qual = tq_val;
-				list_add_tail(&v_entry->list, &globals->entry_list);
-				
-			}
-		}
-
-	}
-	free(fbuf);
-
-	return 0;
-}
-
-static int parse_orig_list(struct globals *globals)
-{
-	int ret;
-
-	ret = parse_orig_list_netlink(globals);
-	if (ret != -EOPNOTSUPP)
-		return ret;
-
-	return parse_orig_list_debugfs(globals);
 }
 
 static int vis_publish_data(struct globals *globals)
@@ -1296,8 +1135,6 @@ static struct globals *vis_init(int argc, char *argv[])
 
 static int vis_server(struct globals *globals)
 {
-	debugfs_mount(NULL);
-
 	globals->push = (struct alfred_push_data_v0 *) globals->buf;
 	globals->vis_data = (struct vis_v1 *) (globals->buf + sizeof(*globals->push) + sizeof(struct alfred_data));
 
