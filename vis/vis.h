@@ -23,9 +23,6 @@
 #define	VIS_PACKETVERSION			1
 #define UPDATE_INTERVAL				10
 
-#define SYS_IFACE_PATH				"/sys/class/net"
-#define SYS_IFACE_STATUS_FMT			SYS_IFACE_PATH"/%s/batman_adv/iface_status"
-
 
 enum opmode {
 	OPMODE_SERVER,

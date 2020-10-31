@@ -36,39 +36,6 @@ struct vis_netlink_opts {
 	struct nlquery_opts query_opts;
 };
 
-static char *read_file(char *fname)
-{
-	FILE *fp;
-	char *buf = NULL, *buf_tmp;
-	size_t size, ret;
-
-	fp = fopen(fname, "r");
-
-	if (!fp)
-		return NULL;
-
-	size = 0;
-	while (!feof(fp)) {
-
-		buf_tmp = realloc(buf, size + 4097);
-		if (!buf_tmp) {
-			free(buf);
-			fclose(fp);
-			return NULL;
-		}
-
-		buf = buf_tmp;
-		ret = fread(buf + size, 1, 4096, fp);
-		size += ret;
-	}
-	fclose(fp);
-
-	if (buf)
-		buf[size] = 0;
-
-	return buf;
-}
-
 static char *mac_to_str(uint8_t *mac)
 {
 	static char macstr[20];
@@ -443,26 +410,17 @@ err_free_sock:
 	return ret_status;
 }
 
-static bool interface_active(unsigned int meshif, unsigned int hardif,
-			     const char *ifname)
+static bool interface_active(unsigned int meshif, unsigned int hardif)
 {
 	char iface_status[IFACE_STATUS_LEN];
-	char path_buff[PATH_BUFF_LEN];
 	char *file_content = NULL;
 	char *content_newline;
 	bool active = false;
 	char *status;
 
 	status = get_iface_status_netlink(meshif, hardif, iface_status);
-	if (!status) {
-		snprintf(path_buff, sizeof(path_buff), SYS_IFACE_STATUS_FMT,
-			 ifname);
-		file_content = read_file(path_buff);
-		if (!file_content)
-			return false;
-
-		status = file_content;
-	}
+	if (!status)
+		return false;
 
 	content_newline = strstr(status, "\n");
 	if (content_newline)
@@ -518,7 +476,7 @@ static int register_interfaces_rtnl_parse(struct nl_msg *msg, void *arg)
 	if (master != register_arg->ifindex)
 		goto err;
 
-	if (!interface_active(master, ifm->ifi_index, ifname))
+	if (!interface_active(master, ifm->ifi_index))
 		goto err;
 
 	get_if_index_byname(register_arg->globals, ifname);
