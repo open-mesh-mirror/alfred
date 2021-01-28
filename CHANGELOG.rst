@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2021.0 (2021-01-28)
+===================
+
+* Drop support for batman-adv's sysfs+debugfs
+
 2020.4 (2020-10-27)
 ===================
 
