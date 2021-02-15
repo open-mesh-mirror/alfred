@@ -115,8 +115,8 @@ struct globals {
 	enum clientmode clientmode;
 	int clientmode_arg;
 	int clientmode_version;
-	int verbose;
-	int ipv4mode;
+	uint8_t verbose:1;
+	uint8_t ipv4mode:1;
 
 	int unix_sock;
 	const char *unix_path;
