@@ -471,6 +471,17 @@ int netsock_open_all(struct globals *globals)
 	return num_socks;
 }
 
+size_t netsocket_count_interfaces(struct globals *globals)
+{
+	struct interface *interface;
+	size_t count = 0;
+
+	list_for_each_entry(interface, &globals->interfaces, list)
+		count++;
+
+	return count;
+}
+
 void netsock_reopen(struct globals *globals)
 {
 	struct interface *interface;

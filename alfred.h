@@ -182,6 +182,7 @@ int unix_sock_req_data_finish(struct globals *globals,
 int vis_update_data(struct globals *globals);
 /* netsock.c */
 int netsock_open_all(struct globals *globals);
+size_t netsocket_count_interfaces(struct globals *globals);
 void netsock_close_all(struct globals *globals);
 int netsock_set_interfaces(struct globals *globals, char *interfaces);
 struct interface *netsock_first_interface(struct globals *globals);

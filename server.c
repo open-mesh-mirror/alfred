@@ -371,6 +371,7 @@ int alfred_server(struct globals *globals)
 	int maxsock, ret, recvs;
 	struct timespec last_check, now, tv;
 	fd_set fds, errfds;
+	size_t num_interfaces;
 	int num_socks;
 
 	if (create_hashes(globals))
@@ -397,7 +398,8 @@ int alfred_server(struct globals *globals)
 		return -1;
 	}
 
-	if (num_socks > 1 && globals->opmode == OPMODE_SECONDARY) {
+	num_interfaces = netsocket_count_interfaces(globals);
+	if (num_interfaces > 1 && globals->opmode == OPMODE_SECONDARY) {
 		fprintf(stderr, "More than one interface specified in secondary mode\n");
 		return -1;
 	}
