@@ -386,14 +386,15 @@ int alfred_server(struct globals *globals)
 	}
 
 	if (strcmp(globals->mesh_iface, "none") != 0 &&
-	    batadv_interface_check(globals->mesh_iface) < 0) {
+	    batadv_interface_check(globals->mesh_iface) < 0 &&
+	    !globals->force) {
 		fprintf(stderr, "Can't start server: batman-adv interface %s not found\n",
 			globals->mesh_iface);
 		return -1;
 	}
 
 	num_socks = netsock_open_all(globals);
-	if (num_socks <= 0) {
+	if (num_socks <= 0 && !globals->force) {
 		fprintf(stderr, "Failed to open interfaces\n");
 		return -1;
 	}

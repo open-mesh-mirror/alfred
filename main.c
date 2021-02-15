@@ -164,6 +164,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"version",		no_argument,		NULL,	'v'},
 		{"verbose",		no_argument,		NULL,	'd'},
 		{"sync-period",		required_argument,	NULL,	'p'},
+		{"force",		no_argument,		NULL,	'f'},
 		{NULL,			0,			NULL,	0},
 	};
 
@@ -184,6 +185,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 	globals->verbose = false;
 	globals->ipv4mode = false;
+	globals->force = false;
 	globals->update_command = NULL;
 	globals->sync_period.tv_sec = ALFRED_INTERVAL;
 	globals->sync_period.tv_nsec = 0;
@@ -191,7 +193,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:4:", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:4:f", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -272,6 +274,9 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->ipv4mode = true;
 			inet_pton(AF_INET, optarg, &alfred_mcast.ipv4);
 			printf(" ** IPv4 Multicast Mode: %x\n", alfred_mcast.ipv4.s_addr);
+			break;
+		case 'f':
+			globals->force = true;
 			break;
 		case 'h':
 		default:

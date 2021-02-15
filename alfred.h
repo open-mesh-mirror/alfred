@@ -117,6 +117,7 @@ struct globals {
 	int clientmode_version;
 	uint8_t verbose:1;
 	uint8_t ipv4mode:1;
+	uint8_t force:1;
 
 	int unix_sock;
 	const char *unix_path;
