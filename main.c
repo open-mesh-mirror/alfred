@@ -40,6 +40,7 @@ static void alfred_usage(void)
 	printf("\n");
 	printf("server mode options:\n");
 	printf("  -i, --interface                     specify the interface (or comma separated list of interfaces) to listen on\n");
+	printf("  -f, --force                         start server even when batman-adv or interface(s) are not yet available.\n");
 	printf("  -b                                  specify the batman-adv interface\n");
 	printf("                                      configured on the system (default: bat0)\n");
 	printf("                                      use 'none' to disable the batman-adv\n");
