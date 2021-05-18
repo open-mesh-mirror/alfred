@@ -1,5 +1,11 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2021.1 (2021-05-18)
+===================
+
+* Allow to force of alfred startup when the interfaces don't work/exist (yet)
+* coding style cleanups and refactoring
+
 2021.0 (2021-01-28)
 ===================
 
