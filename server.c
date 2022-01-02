@@ -442,7 +442,6 @@ int alfred_server(struct globals *globals)
 			netsock_check_error(globals, &errfds);
 
 			if (FD_ISSET(globals->unix_sock, &fds)) {
-				printf("read unix socket\n");
 				unix_sock_read(globals);
 				continue;
 			} else {
