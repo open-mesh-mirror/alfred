@@ -89,6 +89,7 @@ enum clientmode {
 	CLIENT_SET_DATA,
 	CLIENT_MODESWITCH,
 	CLIENT_CHANGE_INTERFACE,
+	CLIENT_CHANGE_BAT_IFACE,
 };
 
 struct interface {
@@ -110,7 +111,7 @@ struct globals {
 
 	char *change_interface;
 	struct server *best_server;	/* NULL if we are a server ourselves */
-	const char *mesh_iface;
+	char *mesh_iface;
 	enum opmode opmode;
 	enum clientmode clientmode;
 	int clientmode_arg;
@@ -150,6 +151,7 @@ int alfred_client_request_data(struct globals *globals);
 int alfred_client_set_data(struct globals *globals);
 int alfred_client_modeswitch(struct globals *globals);
 int alfred_client_change_interface(struct globals *globals);
+int alfred_client_change_bat_iface(struct globals *globals);
 /* recv.c */
 int recv_alfred_packet(struct globals *globals, struct interface *interface,
 		       int recv_sock);

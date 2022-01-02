@@ -296,3 +296,40 @@ int alfred_client_change_interface(struct globals *globals)
 
 	return 0;
 }
+
+int alfred_client_change_bat_iface(struct globals *globals)
+{
+	unsigned char buf[MAX_PAYLOAD];
+	struct alfred_change_bat_iface_v0 *change_bat_iface;
+	int ret, len;
+	size_t interface_len;
+
+	if (unix_sock_open_client(globals))
+		return -1;
+
+	interface_len = strlen(globals->mesh_iface);
+	if (interface_len > sizeof(change_bat_iface->bat_iface)) {
+		fprintf(stderr, "%s: batman-adv interface name list too long, not changing\n",
+			__func__);
+		return 0;
+	}
+
+	change_bat_iface = (struct alfred_change_bat_iface_v0 *)buf;
+	len = sizeof(*change_bat_iface);
+
+	change_bat_iface->header.type = ALFRED_CHANGE_BAT_IFACE;
+	change_bat_iface->header.version = ALFRED_VERSION;
+	change_bat_iface->header.length = htons(len - sizeof(change_bat_iface->header));
+	strncpy(change_bat_iface->bat_iface, globals->mesh_iface,
+		sizeof(change_bat_iface->bat_iface));
+	change_bat_iface->bat_iface[sizeof(change_bat_iface->bat_iface) - 1] = '\0';
+
+	ret = write(globals->unix_sock, buf, len);
+	if (ret != len)
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+
+	unix_sock_close(globals);
+
+	return 0;
+}

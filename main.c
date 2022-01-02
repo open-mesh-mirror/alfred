@@ -37,6 +37,7 @@ static void alfred_usage(void)
 	printf("  -M, --modeswitch primary            switch daemon to mode primary\n");
 	printf("                   secondary          switch daemon to mode secondary\n");
 	printf("  -I, --change-interface [interface]  change to the specified interface(s)\n");
+	printf("  -B, --change-bat-iface [interface]  change to the specified batman-adv interface\n");
 	printf("\n");
 	printf("server mode options:\n");
 	printf("  -i, --interface                     specify the interface (or comma separated list of interfaces) to listen on\n");
@@ -160,6 +161,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"req-version",		required_argument,	NULL,	'V'},
 		{"modeswitch",		required_argument,	NULL,	'M'},
 		{"change-interface",	required_argument,	NULL,	'I'},
+		{"change-bat-iface",	required_argument,	NULL,	'B'},
 		{"unix-path",		required_argument,	NULL,	'u'},
 		{"update-command",	required_argument,	NULL,	'c'},
 		{"version",		no_argument,		NULL,	'v'},
@@ -194,7 +196,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:u:dc:p:4:f", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:B:u:dc:p:4:f", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -251,6 +253,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'I':
 			globals->clientmode = CLIENT_CHANGE_INTERFACE;
 			globals->change_interface = strdup(optarg);
+			break;
+		case 'B':
+			globals->clientmode = CLIENT_CHANGE_BAT_IFACE;
+			globals->mesh_iface = strdup(optarg);
 			break;
 		case 'u':
 			globals->unix_path = optarg;
@@ -313,6 +319,8 @@ int main(int argc, char *argv[])
 		return alfred_client_modeswitch(globals);
 	case CLIENT_CHANGE_INTERFACE:
 		return alfred_client_change_interface(globals);
+	case CLIENT_CHANGE_BAT_IFACE:
+		return alfred_client_change_bat_iface(globals);
 	}
 
 	return 0;

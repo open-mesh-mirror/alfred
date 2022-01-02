@@ -345,6 +345,27 @@ err:
 	return ret;
 }
 
+static int
+unix_sock_change_bat_iface(struct globals *globals,
+			   struct alfred_change_bat_iface_v0 *change_bat_iface,
+			   int client_sock)
+{
+	int len, ret = -1;
+
+	len = ntohs(change_bat_iface->header.length);
+
+	if (len < (int)(sizeof(*change_bat_iface) - sizeof(change_bat_iface->header)))
+		goto err;
+
+	free(globals->mesh_iface);
+	globals->mesh_iface = strdup(change_bat_iface->bat_iface);
+
+	ret = 0;
+err:
+	close(client_sock);
+	return ret;
+}
+
 int unix_sock_read(struct globals *globals)
 {
 	int client_sock;
@@ -402,7 +423,11 @@ int unix_sock_read(struct globals *globals)
 					     (struct alfred_change_interface_v0 *)packet,
 					     client_sock);
 		break;
-
+	case ALFRED_CHANGE_BAT_IFACE:
+		ret = unix_sock_change_bat_iface(globals,
+						 (struct alfred_change_bat_iface_v0 *)packet,
+						 client_sock);
+		break;
 	default:
 		/* unknown packet type */
 		ret = -1;

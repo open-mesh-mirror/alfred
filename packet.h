@@ -68,6 +68,7 @@ enum alfred_packet_type {
 	ALFRED_STATUS_ERROR = 4,
 	ALFRED_MODESWITCH = 5,
 	ALFRED_CHANGE_INTERFACE = 6,
+	ALFRED_CHANGE_BAT_IFACE = 7,
 };
 
 /* packets */
@@ -145,6 +146,19 @@ struct alfred_modeswitch_v0 {
 struct alfred_change_interface_v0 {
 	struct alfred_tlv header;
 	char ifaces[IFNAMSIZ * 16];
+} __packed;
+
+/**
+ * struct alfred_change_bat_iface_v0 - Request to change the
+ * batman-adv interface
+ * @header: TLV header describing the complete packet
+ * @bat_iface: interface to be changed to
+ *
+ * Sent to the daemon by client
+ */
+struct alfred_change_bat_iface_v0 {
+	struct alfred_tlv header;
+	char bat_iface[IFNAMSIZ];
 } __packed;
 
 /**
