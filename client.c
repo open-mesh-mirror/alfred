@@ -38,8 +38,7 @@ int alfred_client_request_data(struct globals *globals)
 
 	request.header.type = ALFRED_REQUEST;
 	request.header.version = ALFRED_VERSION;
-	request.header.length = sizeof(request) - sizeof(request.header);
-	request.header.length = htons(request.header.length);
+	request.header.length = FIXED_TLV_LEN(request);
 	request.requested_type = globals->clientmode_arg;
 	request.tx_id = get_random_id();
 
@@ -188,7 +187,7 @@ int alfred_client_modeswitch(struct globals *globals)
 
 	modeswitch.header.type = ALFRED_MODESWITCH;
 	modeswitch.header.version = ALFRED_VERSION;
-	modeswitch.header.length = htons(len - sizeof(modeswitch.header));
+	modeswitch.header.length = FIXED_TLV_LEN(modeswitch);
 
 	switch (globals->opmode) {
 	case OPMODE_SECONDARY:
@@ -264,7 +263,7 @@ int alfred_client_change_interface(struct globals *globals)
 
 	change_interface.header.type = ALFRED_CHANGE_INTERFACE;
 	change_interface.header.version = ALFRED_VERSION;
-	change_interface.header.length = htons(len - sizeof(change_interface.header));
+	change_interface.header.length = FIXED_TLV_LEN(change_interface);
 	strncpy(change_interface.ifaces, globals->change_interface,
 		sizeof(change_interface.ifaces));
 	change_interface.ifaces[sizeof(change_interface.ifaces) - 1] = '\0';
@@ -312,7 +311,7 @@ int alfred_client_change_bat_iface(struct globals *globals)
 
 	change_bat_iface.header.type = ALFRED_CHANGE_BAT_IFACE;
 	change_bat_iface.header.version = ALFRED_VERSION;
-	change_bat_iface.header.length = htons(len - sizeof(change_bat_iface.header));
+	change_bat_iface.header.length = FIXED_TLV_LEN(change_bat_iface);
 	strncpy(change_bat_iface.bat_iface, globals->mesh_iface,
 		sizeof(change_bat_iface.bat_iface));
 	change_bat_iface.bat_iface[sizeof(change_bat_iface.bat_iface) - 1] = '\0';

@@ -30,6 +30,9 @@
 #define ALFRED_SOCK_PATH_DEFAULT	"/var/run/alfred.sock"
 #define NO_FILTER			-1
 
+#define FIXED_TLV_LEN(__tlv_type) \
+	htons(sizeof(__tlv_type) - sizeof(__tlv_type.header))
+
 enum data_source {
 	SOURCE_LOCAL = 0,
 	SOURCE_FIRST_HAND = 1,
