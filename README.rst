@@ -82,7 +82,8 @@ documentation how to configure alfred in this case. In any event, you can
 still run alfred from the command line. The relevant options are (for a full
 list of options, run alfred -h):
 
-  -i, --interface             specify the interface to listen on
+  -i, --interface             specify the interface to listen on. use 'none'
+                              to disable interface operations
   -b                          specify the batman-adv interface configured on
                               the system (default: bat0). use 'none' to disable
                               the batman-adv based best server selection
@@ -90,6 +91,9 @@ list of options, run alfred -h):
                               accepts data from secondaries and syncs it with
                               other primaries
 
+The interface option '-i' is optional. If interface 'none' is specified, the
+alfred daemon will not communicate with other alfred instances on the
+network unless the interface list is modified at runtime via the unix socket.
 The -b option is optional, and only needed if you run alfred on a batman-adv
 interface not called bat0, or if you don't use batman-adv at all
 (use '-b none'). In this case, alfred will still work but will not be able to

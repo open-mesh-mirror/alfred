@@ -98,12 +98,16 @@ Change the alfred server to use the new \fBbatman-adv interface\fP
 .SH SERVER OPTIONS
 .TP
 \fB\-i\fP, \fB\-\-interface\fP \fIiface\fP
-Specify the interface (or comma separated list of interfaces) to listen on
+Specify the interface (or comma separated list of interfaces) to listen on.
+Use 'none' to disable interface operations.
 .TP
 \fB\-b\fP \fIbatmanif\fP
 Specify the batman-adv interface configured on the system (default: bat0).
 Use 'none' to disable the batman-adv based best server selection.
 
+The interface option \fB\-i\fP is optional. If interface 'none' is specified, the
+alfred daemon will not communicate with other alfred instances on the
+network unless the interface list is modified at runtime via the unix socket.
 The \fB\-b\fP option is optional, and only needed if you run alfred on a
 batman-adv interface not called bat0, or if you don't use batman-adv at all
 (use '\fB\-b\fP none'). In this case, alfred will still work but will not be

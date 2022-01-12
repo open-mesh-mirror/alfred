@@ -179,7 +179,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	memset(globals, 0, sizeof(*globals));
 
 	INIT_LIST_HEAD(&globals->interfaces);
-	globals->change_interface = NULL;
+	globals->net_iface = NULL;
 	globals->opmode = OPMODE_SECONDARY;
 	globals->clientmode = CLIENT_NONE;
 	globals->best_server = NULL;
@@ -224,7 +224,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 			globals->opmode = OPMODE_PRIMARY;
 			break;
 		case 'i':
-			netsock_set_interfaces(globals, optarg);
+			globals->net_iface = strdup(optarg);
 			break;
 		case 'b':
 			globals->mesh_iface = strdup(optarg);
@@ -252,7 +252,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case 'I':
 			globals->clientmode = CLIENT_CHANGE_INTERFACE;
-			globals->change_interface = strdup(optarg);
+			globals->net_iface = strdup(optarg);
 			break;
 		case 'B':
 			globals->clientmode = CLIENT_CHANGE_BAT_IFACE;

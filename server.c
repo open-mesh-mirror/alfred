@@ -380,9 +380,30 @@ int alfred_server(struct globals *globals)
 	if (unix_sock_open_daemon(globals))
 		return -1;
 
-	if (list_empty(&globals->interfaces)) {
-		fprintf(stderr, "Can't start server: interface missing\n");
-		return -1;
+	if (!is_iface_disabled(globals->net_iface)) {
+		if (!globals->net_iface) {
+			fprintf(stderr, "Can't start server: interface missing\n");
+			return -1;
+		}
+
+		netsock_set_interfaces(globals, globals->net_iface);
+
+		if (list_empty(&globals->interfaces) && !globals->force) {
+			fprintf(stderr, "Can't start server: valid interface missing\n");
+			return -1;
+		}
+
+		num_socks = netsock_open_all(globals);
+		if (num_socks <= 0 && !globals->force) {
+			fprintf(stderr, "Failed to open interfaces\n");
+			return -1;
+		}
+
+		num_interfaces = netsocket_count_interfaces(globals);
+		if (num_interfaces > 1 && globals->opmode == OPMODE_SECONDARY) {
+			fprintf(stderr, "More than one interface specified in secondary mode\n");
+			return -1;
+		}
 	}
 
 	if (!is_iface_disabled(globals->mesh_iface) &&
@@ -390,18 +411,6 @@ int alfred_server(struct globals *globals)
 	    !globals->force) {
 		fprintf(stderr, "Can't start server: batman-adv interface %s not found\n",
 			globals->mesh_iface);
-		return -1;
-	}
-
-	num_socks = netsock_open_all(globals);
-	if (num_socks <= 0 && !globals->force) {
-		fprintf(stderr, "Failed to open interfaces\n");
-		return -1;
-	}
-
-	num_interfaces = netsocket_count_interfaces(globals);
-	if (num_interfaces > 1 && globals->opmode == OPMODE_SECONDARY) {
-		fprintf(stderr, "More than one interface specified in secondary mode\n");
 		return -1;
 	}
 

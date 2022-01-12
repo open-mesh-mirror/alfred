@@ -112,7 +112,7 @@ struct interface {
 struct globals {
 	struct list_head interfaces;
 
-	char *change_interface;
+	char *net_iface;
 	struct server *best_server;	/* NULL if we are a server ourselves */
 	char *mesh_iface;
 	enum opmode opmode;

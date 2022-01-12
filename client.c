@@ -252,7 +252,7 @@ int alfred_client_change_interface(struct globals *globals)
 	if (unix_sock_open_client(globals))
 		return -1;
 
-	interface_len = strlen(globals->change_interface);
+	interface_len = strlen(globals->net_iface);
 	if (interface_len > sizeof(change_interface.ifaces)) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
@@ -264,15 +264,15 @@ int alfred_client_change_interface(struct globals *globals)
 	change_interface.header.type = ALFRED_CHANGE_INTERFACE;
 	change_interface.header.version = ALFRED_VERSION;
 	change_interface.header.length = FIXED_TLV_LEN(change_interface);
-	strncpy(change_interface.ifaces, globals->change_interface,
+	strncpy(change_interface.ifaces, globals->net_iface,
 		sizeof(change_interface.ifaces));
 	change_interface.ifaces[sizeof(change_interface.ifaces) - 1] = '\0';
 
 	/* test it before sending
-	 * globals->change_interface is now saved in change_interface.ifaces
+	 * globals->net_iface is now saved in change_interface.ifaces
 	 * and can be modified by strtok_r
 	 */
-	input = globals->change_interface;
+	input = globals->net_iface;
 	while ((token = strtok_r(input, ",", &saveptr))) {
 		input = NULL;
 

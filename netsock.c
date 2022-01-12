@@ -116,6 +116,10 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 
 	netsock_close_all(globals);
 
+	/* interface 'none' disables all interface operations */
+	if (is_iface_disabled(interfaces))
+		return 0;
+
 	input = interfaces;
 	while ((token = strtok_r(input, ",", &saveptr))) {
 		input = NULL;
