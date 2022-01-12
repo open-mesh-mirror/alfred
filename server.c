@@ -205,7 +205,7 @@ static void update_server_info(struct globals *globals)
 	if (globals->opmode == OPMODE_PRIMARY)
 		return;
 
-	if (strcmp(globals->mesh_iface, "none") != 0) {
+	if (!is_iface_disabled(globals->mesh_iface)) {
 		tg_hash = tg_hash_new(globals->mesh_iface);
 		if (!tg_hash) {
 			fprintf(stderr, "Failed to create translation hash\n");
@@ -385,7 +385,7 @@ int alfred_server(struct globals *globals)
 		return -1;
 	}
 
-	if (strcmp(globals->mesh_iface, "none") != 0 &&
+	if (!is_iface_disabled(globals->mesh_iface) &&
 	    batadv_interface_check(globals->mesh_iface) < 0 &&
 	    !globals->force) {
 		fprintf(stderr, "Can't start server: batman-adv interface %s not found\n",

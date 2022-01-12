@@ -67,6 +67,17 @@ bool is_valid_ether_addr(uint8_t addr[ETH_ALEN])
 	return true;
 }
 
+bool is_iface_disabled(char *iface)
+{
+	if (!iface)
+		return false;
+
+	if (strcmp(iface, "none") != 0)
+		return false;
+
+	return true;
+}
+
 static void ipv4_request_mac_resolve(const alfred_addr *addr)
 {
 	const struct sockaddr *sockaddr;
