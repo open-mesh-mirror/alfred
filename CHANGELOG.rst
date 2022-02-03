@@ -1,5 +1,12 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2022.0 (2021-02-03)
+===================
+
+* coding style cleanups and refactoring
+* allow changing of batman-adv interface at runtime
+* allow to start alfred without interfaces specified
+
 2021.4 (2021-11-19)
 ===================
 
