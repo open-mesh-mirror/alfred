@@ -329,6 +329,8 @@ unix_sock_change_iface(struct globals *globals,
 	if (len < (int)(sizeof(*change_iface) - sizeof(change_iface->header)))
 		goto err;
 
+	change_iface->ifaces[sizeof(change_iface->ifaces) - 1] = '\0';
+
 	if (globals->opmode == OPMODE_SECONDARY) {
 		if (strstr(change_iface->ifaces, ",") != NULL) {
 			ret = -EINVAL;
