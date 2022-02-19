@@ -425,6 +425,7 @@ int alfred_client_server_status(struct globals *globals)
 				break;
 
 			status_net_iface = (struct alfred_server_status_net_iface_v0 *)(buf + consumed);
+			status_net_iface->net_iface[sizeof(status_net_iface->net_iface) - 1] = 0;
 			printf("- interface: %s\n", status_net_iface->net_iface);
 			printf("\t- status: %s\n",
 				status_net_iface->active == 1 ? "active" : "inactive");
@@ -434,6 +435,7 @@ int alfred_client_server_status(struct globals *globals)
 				break;
 
 			status_bat_iface = (struct alfred_server_status_bat_iface_v0 *)(buf + consumed);
+			status_bat_iface->bat_iface[sizeof(status_bat_iface->bat_iface) - 1] = 0;
 			printf("- batman-adv interface: %s\n", status_bat_iface->bat_iface);
 			break;
 		}
