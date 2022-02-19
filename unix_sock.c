@@ -360,6 +360,7 @@ unix_sock_change_bat_iface(struct globals *globals,
 		goto err;
 
 	free(globals->mesh_iface);
+	change_bat_iface->bat_iface[sizeof(change_bat_iface->bat_iface) - 1] = '\0';
 	globals->mesh_iface = strdup(change_bat_iface->bat_iface);
 
 	ret = 0;
