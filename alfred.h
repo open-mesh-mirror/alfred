@@ -31,7 +31,7 @@
 #define NO_FILTER			-1
 
 #define FIXED_TLV_LEN(__tlv_type) \
-	htons(sizeof(__tlv_type) - sizeof(__tlv_type.header))
+	htons(sizeof(__tlv_type) - sizeof((__tlv_type).header))
 
 enum data_source {
 	SOURCE_LOCAL = 0,
