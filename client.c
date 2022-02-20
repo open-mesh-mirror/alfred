@@ -325,3 +325,123 @@ int alfred_client_change_bat_iface(struct globals *globals)
 
 	return 0;
 }
+
+int alfred_client_server_status(struct globals *globals)
+{
+	struct alfred_server_status_net_iface_v0 *status_net_iface;
+	struct alfred_server_status_bat_iface_v0 *status_bat_iface;
+	struct alfred_server_status_op_mode_v0 *status_op_mode;
+	struct alfred_server_status_req_v0 status_req;
+	struct alfred_server_status_rep_v0 *status_rep;
+	int ret, tlvsize, headsize, len, consumed;
+	struct alfred_tlv *status_tlv;
+	uint8_t buf[MAX_PAYLOAD];
+
+	if (unix_sock_open_client(globals))
+		return -1;
+
+	len = sizeof(status_req);
+	memset(&status_req, 0, len);
+
+	status_req.header.type = ALFRED_SERVER_STATUS;
+	status_req.header.version = ALFRED_VERSION;
+	status_req.header.length = 0;
+
+	ret = write(globals->unix_sock, (unsigned char *)&status_req, len);
+	if (ret != len)
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+
+	len = read(globals->unix_sock, buf, sizeof(buf));
+	if (len <= 0) {
+		perror("read from unix socket failed");
+		goto err;
+	}
+
+	ret = -1;
+	status_rep = (struct alfred_server_status_rep_v0 *)buf;
+
+	/* drop too small packets */
+	headsize = sizeof(status_rep->header);
+	if (len < headsize) {
+		perror("unexpected header size received from unix socket");
+		goto err;
+	}
+
+	if ((len - headsize) < ((int)ntohs(status_rep->header.length))) {
+		perror("unexpected packet size received from unix socket");
+		goto err;
+	}
+
+	if (status_rep->header.version != ALFRED_VERSION) {
+		perror("alfred version mismatch");
+		goto err;
+	}
+
+	headsize = ntohs(status_rep->header.length);
+
+	if (headsize < (int)(sizeof(*status_rep) - sizeof(status_rep->header)))
+		goto err;
+
+	consumed = sizeof(*status_rep);
+
+	while (len - consumed > 0) {
+		if (len - consumed < (int)sizeof(*status_tlv))
+			break;
+
+		status_tlv = (struct alfred_tlv *)(buf + consumed);
+
+		if (status_tlv->version != ALFRED_VERSION)
+			break;
+
+		tlvsize = ntohs(status_tlv->length);
+		tlvsize += sizeof(*status_tlv);
+
+		if (len - consumed < tlvsize)
+			break;
+
+		switch (status_tlv->type) {
+		case ALFRED_SERVER_OP_MODE:
+			if (tlvsize != sizeof(*status_op_mode))
+				break;
+
+			status_op_mode = (struct alfred_server_status_op_mode_v0 *)(buf + consumed);
+
+			switch (status_op_mode->mode) {
+			case ALFRED_MODESWITCH_SECONDARY:
+				printf("- mode: secondary\n");
+				break;
+			case ALFRED_MODESWITCH_PRIMARY:
+				printf("- mode: primary\n");
+				break;
+			default:
+				printf("- mode: unknown\n");
+				break;
+			}
+
+			break;
+		case ALFRED_SERVER_NET_IFACE:
+			if (tlvsize != sizeof(*status_net_iface))
+				break;
+
+			status_net_iface = (struct alfred_server_status_net_iface_v0 *)(buf + consumed);
+			printf("- interface: %s\n", status_net_iface->net_iface);
+			printf("\t- status: %s\n",
+				status_net_iface->active == 1 ? "active" : "inactive");
+			break;
+		case ALFRED_SERVER_BAT_IFACE:
+			if (tlvsize != sizeof(*status_bat_iface))
+				break;
+
+			status_bat_iface = (struct alfred_server_status_bat_iface_v0 *)(buf + consumed);
+			printf("- batman-adv interface: %s\n", status_bat_iface->bat_iface);
+			break;
+		}
+
+		consumed += tlvsize;
+	}
+
+err:
+	unix_sock_close(globals);
+	return 0;
+}

@@ -368,6 +368,109 @@ err:
 	return ret;
 }
 
+static int unix_sock_server_status(struct globals *globals, int client_sock)
+{
+	struct alfred_server_status_net_iface_v0 *status_net_iface;
+	struct alfred_server_status_bat_iface_v0 *status_bat_iface;
+	struct alfred_server_status_op_mode_v0 *status_op_mode;
+	struct alfred_server_status_rep_v0 *status_rep;
+	struct interface *interface;
+	uint8_t buf[MAX_PAYLOAD];
+	int ret = -1;
+	int len = 0;
+
+	/* too large? - should never happen */
+	if (sizeof(*status_rep) + len > sizeof(buf)) {
+		fprintf(stderr, "ERROR: send buffer too small for server_status\n");
+		goto err;
+	}
+
+	status_rep = (struct alfred_server_status_rep_v0 *)buf;
+	status_rep->header.type = ALFRED_SERVER_STATUS;
+	status_rep->header.version = ALFRED_VERSION;
+
+	len += sizeof(*status_rep);
+
+	/* too large? - should never happen */
+	if (sizeof(*status_op_mode) + len > sizeof(buf)) {
+		fprintf(stderr, "ERROR: send buffer too small for server_status op_mode\n");
+		goto err;
+	}
+
+	status_op_mode = (struct alfred_server_status_op_mode_v0 *)(buf + len);
+	status_op_mode->header.type = ALFRED_SERVER_OP_MODE;
+	status_op_mode->header.version = ALFRED_VERSION;
+	status_op_mode->header.length = FIXED_TLV_LEN(*status_op_mode);
+
+	switch (globals->opmode) {
+	case OPMODE_SECONDARY:
+		status_op_mode->mode = ALFRED_MODESWITCH_SECONDARY;
+		break;
+	case OPMODE_PRIMARY:
+		status_op_mode->mode = ALFRED_MODESWITCH_PRIMARY;
+		break;
+	default:
+		break;
+	}
+
+	len += sizeof(*status_op_mode);
+
+	list_for_each_entry(interface, &globals->interfaces, list) {
+		/* too large? - should never happen */
+		if (sizeof(*status_net_iface) + len > sizeof(buf)) {
+			fprintf(stderr, "ERROR: send buffer too small for server_status iface\n");
+			goto err;
+		}
+
+		status_net_iface = (struct alfred_server_status_net_iface_v0 *)(buf + len);
+		status_net_iface->header.type = ALFRED_SERVER_NET_IFACE;
+		status_net_iface->header.version = ALFRED_VERSION;
+		status_net_iface->header.length = FIXED_TLV_LEN(*status_net_iface);
+
+		strncpy(status_net_iface->net_iface, interface->interface,
+			sizeof(status_net_iface->net_iface));
+		status_net_iface->net_iface[sizeof(status_net_iface->net_iface) - 1] = '\0';
+		if (interface->netsock > -1)
+			status_net_iface->active = 1;
+		else
+			status_net_iface->active = 0;
+
+		len += sizeof(*status_net_iface);
+	}
+
+	/* too large? - should never happen */
+	if (sizeof(*status_bat_iface) + len > sizeof(buf)) {
+		fprintf(stderr, "ERROR: send buffer too small for server_status bat_iface\n");
+		goto err;
+	}
+
+	status_bat_iface = (struct alfred_server_status_bat_iface_v0 *)(buf + len);
+	status_bat_iface->header.type = ALFRED_SERVER_BAT_IFACE;
+	status_bat_iface->header.version = ALFRED_VERSION;
+	status_bat_iface->header.length = FIXED_TLV_LEN(*status_bat_iface);
+
+	strncpy(status_bat_iface->bat_iface, globals->mesh_iface,
+		sizeof(status_bat_iface->bat_iface));
+	status_bat_iface->bat_iface[sizeof(status_bat_iface->bat_iface) - 1] = '\0';
+
+	len += sizeof(*status_bat_iface);
+	status_rep->header.length = htons(len - sizeof(status_rep->header));
+
+	ret = write(client_sock, buf, len);
+	if (ret != len) {
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+		ret = -1;
+		goto err;
+	}
+
+	ret = 0;
+
+err:
+	close(client_sock);
+	return ret;
+}
+
 int unix_sock_read(struct globals *globals)
 {
 	int client_sock;
@@ -429,6 +532,9 @@ int unix_sock_read(struct globals *globals)
 		ret = unix_sock_change_bat_iface(globals,
 						 (struct alfred_change_bat_iface_v0 *)packet,
 						 client_sock);
+		break;
+	case ALFRED_SERVER_STATUS:
+		ret = unix_sock_server_status(globals, client_sock);
 		break;
 	default:
 		/* unknown packet type */

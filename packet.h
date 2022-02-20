@@ -69,6 +69,7 @@ enum alfred_packet_type {
 	ALFRED_MODESWITCH = 5,
 	ALFRED_CHANGE_INTERFACE = 6,
 	ALFRED_CHANGE_BAT_IFACE = 7,
+	ALFRED_SERVER_STATUS = 8,
 };
 
 /* packets */
@@ -159,6 +160,73 @@ struct alfred_change_interface_v0 {
 struct alfred_change_bat_iface_v0 {
 	struct alfred_tlv header;
 	char bat_iface[IFNAMSIZ];
+};
+
+/**
+ * enum alfred_packet_type - Types of packet stored in the main alfred_tlv
+ * @ALFRED_SERVER_MODE: Contains alfred mode information*
+ * @ALFRED_SERVER_NET_IFACE: Contains alfred network interface information*
+ * @ALFRED_SERVER_BAT_IFACE: Contains alfred batman interface information*
+ */
+enum alfred_server_status_type {
+	ALFRED_SERVER_OP_MODE = 0,
+	ALFRED_SERVER_NET_IFACE = 1,
+	ALFRED_SERVER_BAT_IFACE = 2,
+};
+
+/**
+ * struct alfred_server_status_req_v0 - server status request
+ * @header: TLV header describing the complete packet
+ *
+ * Sent to the daemon by client
+ */
+struct alfred_server_status_req_v0 {
+	struct alfred_tlv header;
+} __packed;
+
+/**
+ * struct alfred_server_status_op_mode_v0 - server op mode status information
+ * @op_mode: active op mode
+ *
+ * Sent to the client by daemon in response to status request
+ */
+struct alfred_server_status_op_mode_v0 {
+	struct alfred_tlv header;
+	uint8_t mode;
+} __packed;
+
+/**
+ * struct alfred_server_status_net_iface_v0 - server net iface status information
+ * @net_iface: configured network interface
+ * @active: network interface active/inactive status info
+ *
+ * Sent to the client by daemon in response to status request
+ */
+struct alfred_server_status_net_iface_v0 {
+	struct alfred_tlv header;
+	char net_iface[IFNAMSIZ];
+	uint8_t active;
+} __packed;
+
+/**
+ * struct alfred_server_status_bat_iface_v0 - server bat iface status information
+ * @op_mode: configured batman interface
+ *
+ * Sent to the client by daemon in response to status request
+ */
+struct alfred_server_status_bat_iface_v0 {
+	struct alfred_tlv header;
+	char bat_iface[IFNAMSIZ];
+} __packed;
+
+/**
+ * struct alfred_server_status_rep_v0 - server status reply
+ * @header: TLV header describing the complete packet
+ *
+ * Sent by the daemon to client in response to status request
+ */
+struct alfred_server_status_rep_v0 {
+	struct alfred_tlv header;
 } __packed;
 
 /**
