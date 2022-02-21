@@ -373,6 +373,11 @@ int alfred_client_server_status(struct globals *globals)
 		goto err;
 	}
 
+	if (status_rep->header.type != ALFRED_SERVER_STATUS) {
+		perror("alfred server_status type mismatch");
+		goto err;
+	}
+
 	if (status_rep->header.version != ALFRED_VERSION) {
 		perror("alfred version mismatch");
 		goto err;
