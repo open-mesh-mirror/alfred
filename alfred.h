@@ -16,9 +16,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
-#include <sys/select.h>
+#include <sys/epoll.h>
 #include <sys/types.h>
 #include "bitops.h"
+#include "epoll_handle.h"
 #include "list.h"
 #include "packet.h"
 
@@ -29,6 +30,10 @@
 #define ALFRED_DATA_TIMEOUT		600
 #define ALFRED_SOCK_PATH_DEFAULT	"/var/run/alfred.sock"
 #define NO_FILTER			-1
+
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
 
 #define FIXED_TLV_LEN(__tlv_type) \
 	htons(sizeof(__tlv_type) - sizeof((__tlv_type).header))
@@ -101,9 +106,12 @@ struct interface {
 	alfred_addr address;
 	uint32_t scope_id;
 	char *interface;
+
 	int netsock;
 	int netsock_mcast;
-	int netsock_arp;
+
+	struct epoll_handle netsock_epoll;
+	struct epoll_handle netsock_mcast_epoll;
 
 	struct hashtable_t *server_hash;
 
@@ -124,9 +132,13 @@ struct globals {
 	uint8_t ipv4mode:1;
 	uint8_t force:1;
 
+	int epollfd;
+
 	int check_timerfd;
+	struct epoll_handle check_epoll;
 
 	int unix_sock;
+	struct epoll_handle unix_epoll;
 	const char *unix_path;
 
 	const char *update_command;
@@ -182,7 +194,6 @@ int sync_data(struct globals *globals);
 ssize_t send_alfred_packet(struct globals *globals, struct interface *interface,
 			   const alfred_addr *dest, void *buf, int length);
 /* unix_sock.c */
-int unix_sock_read(struct globals *globals);
 int unix_sock_open_daemon(struct globals *globals);
 int unix_sock_open_client(struct globals *globals);
 int unix_sock_close(struct globals *globals);
@@ -197,9 +208,6 @@ void netsock_close_all(struct globals *globals);
 int netsock_set_interfaces(struct globals *globals, char *interfaces);
 struct interface *netsock_first_interface(struct globals *globals);
 void netsock_reopen(struct globals *globals);
-int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock);
-void netsock_check_error(struct globals *globals, fd_set *errfds);
-int netsock_receive_packet(struct globals *globals, fd_set *fds);
 int netsock_own_address(const struct globals *globals,
 			const alfred_addr *address);
 /* util.c */

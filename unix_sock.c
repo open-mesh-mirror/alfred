@@ -23,9 +23,14 @@
 #include "hash.h"
 #include "packet.h"
 
+static void unix_sock_read(struct globals *globals,
+			   struct epoll_handle *handle __unused,
+			   struct epoll_event *ev __unused);
+
 int unix_sock_open_daemon(struct globals *globals)
 {
 	struct sockaddr_un addr;
+	struct epoll_event ev;
 
 	unlink(globals->unix_path);
 
@@ -48,6 +53,16 @@ int unix_sock_open_daemon(struct globals *globals)
 
 	if (listen(globals->unix_sock, 10) < 0) {
 		perror("can't listen on unix socket");
+		return -1;
+	}
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = &globals->unix_epoll;
+	globals->unix_epoll.handler = unix_sock_read;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, globals->unix_sock,
+		      &ev) == -1) {
+		perror("Failed to add epoll for check_timer");
 		return -1;
 	}
 
@@ -472,20 +487,22 @@ err:
 	return ret;
 }
 
-int unix_sock_read(struct globals *globals)
+static void unix_sock_read(struct globals *globals,
+			   struct epoll_handle *handle __unused,
+			   struct epoll_event *ev __unused)
 {
 	int client_sock;
 	struct sockaddr_un sun_addr;
 	socklen_t sun_size = sizeof(sun_addr);
 	struct alfred_tlv *packet;
 	uint8_t buf[MAX_PAYLOAD];
-	int length, headsize, ret = -1;
+	int length, headsize;
 
 	client_sock = accept(globals->unix_sock, (struct sockaddr *)&sun_addr,
 			     &sun_size);
 	if (client_sock < 0) {
 		perror("can't accept unix connection");
-		return -1;
+		return;
 	}
 
 	/* we assume that we can instantly read here. */
@@ -510,44 +527,42 @@ int unix_sock_read(struct globals *globals)
 
 	switch (packet->type) {
 	case ALFRED_PUSH_DATA:
-		ret = unix_sock_add_data(globals,
-					 (struct alfred_push_data_v0 *)packet,
-					 client_sock);
+		unix_sock_add_data(globals,
+				   (struct alfred_push_data_v0 *)packet,
+				   client_sock);
 		break;
 	case ALFRED_REQUEST:
-		ret = unix_sock_req_data(globals,
-					 (struct alfred_request_v0 *)packet,
-					 client_sock);
+		unix_sock_req_data(globals,
+				   (struct alfred_request_v0 *)packet,
+				   client_sock);
 		break;
 	case ALFRED_MODESWITCH:
-		ret = unix_sock_modesw(globals,
-				       (struct alfred_modeswitch_v0 *)packet,
-				       client_sock);
+		unix_sock_modesw(globals,
+				 (struct alfred_modeswitch_v0 *)packet,
+				 client_sock);
 		break;
 	case ALFRED_CHANGE_INTERFACE:
-		ret = unix_sock_change_iface(globals,
-					     (struct alfred_change_interface_v0 *)packet,
-					     client_sock);
+		 unix_sock_change_iface(globals,
+					(struct alfred_change_interface_v0 *)packet,
+					client_sock);
 		break;
 	case ALFRED_CHANGE_BAT_IFACE:
-		ret = unix_sock_change_bat_iface(globals,
-						 (struct alfred_change_bat_iface_v0 *)packet,
-						 client_sock);
+		unix_sock_change_bat_iface(globals,
+					   (struct alfred_change_bat_iface_v0 *)packet,
+					   client_sock);
 		break;
 	case ALFRED_SERVER_STATUS:
-		ret = unix_sock_server_status(globals, client_sock);
+		unix_sock_server_status(globals, client_sock);
 		break;
 	default:
 		/* unknown packet type */
-		ret = -1;
 		goto err;
 	}
 
-	return ret;
+	return;
 
 err:
 	close(client_sock);
-	return ret;
 }
 
 int unix_sock_close(struct globals *globals)

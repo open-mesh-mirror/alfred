@@ -26,10 +26,6 @@
 #include "batadv_query.h"
 #include "netlink.h"
 
-#ifndef __unused
-#define __unused __attribute__((unused))
-#endif
-
 static const int translate_mac_netlink_mandatory[] = {
 	BATADV_ATTR_TT_ADDRESS,
 	BATADV_ATTR_ORIG_ADDRESS,

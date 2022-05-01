@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
-#include <sys/select.h>
+#include <sys/epoll.h>
 #ifdef CONFIG_ALFRED_CAPABILITIES
 #include <sys/capability.h>
 #endif
@@ -203,12 +203,59 @@ out:
 	return ret;
 }
 
-static int netsock_open(struct interface *interface)
+static void netsock_close_error(struct interface *interface)
+{
+	fprintf(stderr, "Error on netsock detected\n");
+
+	if (interface->netsock >= 0)
+		close(interface->netsock);
+
+	if (interface->netsock_mcast >= 0)
+		close(interface->netsock_mcast);
+
+	interface->netsock = -1;
+	interface->netsock_mcast = -1;
+}
+
+static void netsock_handle_event(struct globals *globals,
+				 struct epoll_handle *handle,
+				 struct epoll_event *ev)
+{
+	struct interface *interface;
+
+	interface = container_of(handle, struct interface, netsock_epoll);
+
+	if (ev->events & EPOLLERR) {
+		netsock_close_error(interface);
+		return;
+	}
+
+	recv_alfred_packet(globals, interface, interface->netsock);
+}
+
+static void netsock_mcast_handle_event(struct globals *globals,
+				       struct epoll_handle *handle,
+				       struct epoll_event *ev)
+{
+	struct interface *interface;
+
+	interface = container_of(handle, struct interface, netsock_mcast_epoll);
+
+	if (ev->events & EPOLLERR) {
+		netsock_close_error(interface);
+		return;
+	}
+
+	recv_alfred_packet(globals, interface, interface->netsock_mcast);
+}
+
+static int netsock_open(struct globals *globals, struct interface *interface)
 {
 	int sock;
 	int sock_mc;
 	struct sockaddr_in6 sin6, sin6_mc;
 	struct ipv6_mreq mreq;
+	struct epoll_event ev;
 	struct ifreq ifr;
 	int ret;
 
@@ -318,6 +365,26 @@ static int netsock_open(struct interface *interface)
 		goto err;
 	}
 
+	ev.events = EPOLLIN;
+	ev.data.ptr = &interface->netsock_epoll;
+	interface->netsock_epoll.handler = netsock_handle_event;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, sock,
+		      &ev) == -1) {
+		perror("Failed to add epoll for netsock");
+		goto err;
+	}
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = &interface->netsock_mcast_epoll;
+	interface->netsock_mcast_epoll.handler = netsock_mcast_handle_event;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, sock_mc,
+		      &ev) == -1) {
+		perror("Failed to add epoll for netsock_mcast");
+		goto err;
+	}
+
 	interface->netsock = sock;
 	interface->netsock_mcast = sock_mc;
 
@@ -328,11 +395,12 @@ err:
 	return -1;
 }
 
-static int netsock_open4(struct interface *interface)
+static int netsock_open4(struct globals *globals, struct interface *interface)
 {
 	int sock;
 	int sock_mc;
 	struct sockaddr_in sin4, sin_mc;
+	struct epoll_event ev;
 	struct ip_mreq mreq;
 	struct ifreq ifr;
 	int ret;
@@ -446,6 +514,26 @@ static int netsock_open4(struct interface *interface)
 		goto err;
 	}
 
+	ev.events = EPOLLIN;
+	ev.data.ptr = &interface->netsock_epoll;
+	interface->netsock_epoll.handler = netsock_handle_event;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, sock,
+		      &ev) == -1) {
+		perror("Failed to add epoll for netsock");
+		goto err;
+	}
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = &interface->netsock_mcast_epoll;
+	interface->netsock_mcast_epoll.handler = netsock_mcast_handle_event;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, sock_mc,
+		      &ev) == -1) {
+		perror("Failed to add epoll for netsock_mcast");
+		goto err;
+	}
+
 	interface->netsock = sock;
 	interface->netsock_mcast = sock_mc;
 
@@ -464,9 +552,9 @@ int netsock_open_all(struct globals *globals)
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
 		if (globals->ipv4mode)
-			ret = netsock_open4(interface);
+			ret = netsock_open4(globals, interface);
 		else
-			ret = netsock_open(interface);
+			ret = netsock_open(globals, interface);
 
 		if (ret >= 0)
 			num_socks++;
@@ -493,80 +581,11 @@ void netsock_reopen(struct globals *globals)
 	list_for_each_entry(interface, &globals->interfaces, list) {
 		if (interface->netsock < 0) {
 			if (globals->ipv4mode)
-				netsock_open4(interface);
+				netsock_open4(globals, interface);
 			else
-				netsock_open(interface);
+				netsock_open(globals, interface);
 		}
 	}
-}
-
-int netsock_prepare_select(struct globals *globals, fd_set *fds, int maxsock)
-{
-	struct interface *interface;
-
-	list_for_each_entry(interface, &globals->interfaces, list) {
-		if (interface->netsock >= 0) {
-			FD_SET(interface->netsock, fds);
-			if (maxsock < interface->netsock)
-				maxsock = interface->netsock;
-		}
-
-		if (interface->netsock_mcast >= 0) {
-			FD_SET(interface->netsock_mcast, fds);
-			if (maxsock < interface->netsock_mcast)
-				maxsock = interface->netsock_mcast;
-		}
-	}
-
-	return maxsock;
-}
-
-void netsock_check_error(struct globals *globals, fd_set *errfds)
-{
-	struct interface *interface;
-
-	list_for_each_entry(interface, &globals->interfaces, list) {
-		if ((interface->netsock < 0 ||
-		     !FD_ISSET(interface->netsock, errfds)) &&
-		    (interface->netsock_mcast < 0 ||
-		     !FD_ISSET(interface->netsock_mcast, errfds)))
-			continue;
-
-		fprintf(stderr, "Error on netsock detected\n");
-
-		if (interface->netsock >= 0)
-			close(interface->netsock);
-
-		if (interface->netsock_mcast >= 0)
-			close(interface->netsock_mcast);
-
-		interface->netsock = -1;
-		interface->netsock_mcast = -1;
-	}
-}
-
-int netsock_receive_packet(struct globals *globals, fd_set *fds)
-{
-	struct interface *interface;
-	int recvs = 0;
-
-	list_for_each_entry(interface, &globals->interfaces, list) {
-		if (interface->netsock >= 0 &&
-		    FD_ISSET(interface->netsock, fds)) {
-			recv_alfred_packet(globals, interface,
-					   interface->netsock);
-			recvs++;
-		}
-
-		if (interface->netsock_mcast >= 0 &&
-		    FD_ISSET(interface->netsock_mcast, fds)) {
-			recv_alfred_packet(globals, interface,
-					   interface->netsock_mcast);
-			recvs++;
-		}
-	}
-
-	return recvs;
 }
 
 int netsock_own_address(const struct globals *globals,

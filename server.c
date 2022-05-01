@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/select.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
@@ -367,9 +367,62 @@ static void execute_update_command(struct globals *globals)
 	free(command);
 }
 
+static void process_events(struct globals *globals)
+{
+	/* WARNING only processing one event because it could be that
+	 * netsock + their fds are getting deleted
+	 */
+	struct epoll_event events[1];
+	struct epoll_handle *handle;
+	int nfds;
+
+	nfds = epoll_wait(globals->epollfd, events,
+			  sizeof(events) / sizeof(*events),  -1);
+	if (nfds == -1) {
+		if (errno == EINTR)
+			return;
+
+		perror("main loop select failed ...");
+		return;
+	}
+
+	for (int i = 0; i < nfds; i++) {
+		handle = (struct epoll_handle *)events[i].data.ptr;
+		handle->handler(globals, handle, &events[i]);
+	}
+}
+
+static void sync_period_timer(struct globals *globals,
+			      struct epoll_handle *handle __unused,
+			      struct epoll_event *ev __unused)
+{
+	struct timespec now;
+	uint64_t timer_exp;
+
+	read(globals->check_timerfd, &timer_exp, sizeof(timer_exp));
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	if (globals->opmode == OPMODE_PRIMARY) {
+		/* we are a primary */
+		printf("[%ld.%09ld] announce primary ...\n",
+		       now.tv_sec, now.tv_nsec);
+		announce_primary(globals);
+		sync_data(globals);
+	} else {
+		/* send local data to server */
+		update_server_info(globals);
+		push_local_data(globals);
+	}
+
+	purge_data(globals);
+	check_if_sockets(globals);
+	execute_update_command(globals);
+}
+
 static int create_sync_period_timer(struct globals *globals)
 {
 	struct itimerspec sync_timer;
+	struct epoll_event ev;
 	int ret;
 
 	globals->check_timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
@@ -387,20 +440,33 @@ static int create_sync_period_timer(struct globals *globals)
 		return -1;
 	}
 
+	ev.events = EPOLLIN;
+	ev.data.ptr = &globals->check_epoll;
+	globals->check_epoll.handler = sync_period_timer;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, globals->check_timerfd,
+		      &ev) == -1) {
+		perror("Failed to add epoll for check_timer");
+		return -1;
+	}
+
 	return 0;
 }
 
 int alfred_server(struct globals *globals)
 {
-	int maxsock, ret, recvs;
-	struct timespec now;
-	fd_set fds, errfds;
 	size_t num_interfaces;
-	uint64_t timer_exp;
+	struct timespec now;
 	int num_socks;
 
 	if (create_hashes(globals))
 		return -1;
+
+	globals->epollfd = epoll_create1(0);
+	if (globals->epollfd == -1) {
+		perror("Could not create epoll for main thread");
+		return -1;
+	}
 
 	if (create_sync_period_timer(globals))
 		return -1;
@@ -447,56 +513,7 @@ int alfred_server(struct globals *globals)
 
 	while (1) {
 		netsock_reopen(globals);
-
-		FD_ZERO(&fds);
-		FD_ZERO(&errfds);
-		FD_SET(globals->unix_sock, &fds);
-		maxsock = globals->unix_sock;
-
-		FD_SET(globals->check_timerfd, &fds);
-		if (maxsock < globals->check_timerfd)
-			maxsock = globals->check_timerfd;
-
-		maxsock = netsock_prepare_select(globals, &fds, maxsock);
-		maxsock = netsock_prepare_select(globals, &errfds, maxsock);
-
-		ret = pselect(maxsock + 1, &fds, NULL, &errfds, NULL, NULL);
-
-		if (ret == -1) {
-			perror("main loop select failed ...");
-		} else if (ret) {
-			netsock_check_error(globals, &errfds);
-
-			if (FD_ISSET(globals->unix_sock, &fds)) {
-				unix_sock_read(globals);
-				continue;
-			} else {
-				recvs = netsock_receive_packet(globals, &fds);
-				if (recvs > 0)
-					continue;
-			}
-		}
-
-		if (FD_ISSET(globals->check_timerfd, &fds)) {
-			read(globals->check_timerfd, &timer_exp,
-			     sizeof(timer_exp));
-			clock_gettime(CLOCK_MONOTONIC, &now);
-
-			if (globals->opmode == OPMODE_PRIMARY) {
-				/* we are a primary */
-				printf("[%ld.%09ld] announce primary ...\n",
-				       now.tv_sec, now.tv_nsec);
-				announce_primary(globals);
-				sync_data(globals);
-			} else {
-				/* send local data to server */
-				update_server_info(globals);
-				push_local_data(globals);
-			}
-			purge_data(globals);
-			check_if_sockets(globals);
-			execute_update_command(globals);
-		}
+		process_events(globals);
 	}
 
 	netsock_close_all(globals);
