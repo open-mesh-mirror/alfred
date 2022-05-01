@@ -124,6 +124,8 @@ struct globals {
 	uint8_t ipv4mode:1;
 	uint8_t force:1;
 
+	int check_timerfd;
+
 	int unix_sock;
 	const char *unix_path;
 

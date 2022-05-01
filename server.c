@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
@@ -366,15 +367,42 @@ static void execute_update_command(struct globals *globals)
 	free(command);
 }
 
+static int create_sync_period_timer(struct globals *globals)
+{
+	struct itimerspec sync_timer;
+	int ret;
+
+	globals->check_timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+	if (globals->check_timerfd < 0) {
+		perror("Failed to create periodic timer");
+		return -1;
+	}
+
+	sync_timer.it_value = globals->sync_period;
+	sync_timer.it_interval = globals->sync_period;
+
+	ret = timerfd_settime(globals->check_timerfd, 0, &sync_timer, NULL);
+	if (ret < 0) {
+		perror("Failed to arm synchronization timer");
+		return -1;
+	}
+
+	return 0;
+}
+
 int alfred_server(struct globals *globals)
 {
 	int maxsock, ret, recvs;
-	struct timespec last_check, now, tv;
+	struct timespec now;
 	fd_set fds, errfds;
 	size_t num_interfaces;
+	uint64_t timer_exp;
 	int num_socks;
 
 	if (create_hashes(globals))
+		return -1;
+
+	if (create_sync_period_timer(globals))
 		return -1;
 
 	if (unix_sock_open_daemon(globals))
@@ -414,25 +442,10 @@ int alfred_server(struct globals *globals)
 		return -1;
 	}
 
-	clock_gettime(CLOCK_MONOTONIC, &last_check);
-	globals->if_check = last_check;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	globals->if_check = now;
 
 	while (1) {
-		clock_gettime(CLOCK_MONOTONIC, &now);
-
-		/* subtract the synchronization period from the current time
-		 * NOTE: this is an atypical usage of time_diff as it ignores the return
-		 * value and store the result back into now, essentially performing the
-		 * operation:
-		 * now -= globals->sync_period;
-		 */
-		time_diff(&now, &globals->sync_period, &now);
-
-		if (!time_diff(&last_check, &now, &tv)) {
-			tv.tv_sec = 0;
-			tv.tv_nsec = 0;
-		}
-
 		netsock_reopen(globals);
 
 		FD_ZERO(&fds);
@@ -440,10 +453,14 @@ int alfred_server(struct globals *globals)
 		FD_SET(globals->unix_sock, &fds);
 		maxsock = globals->unix_sock;
 
+		FD_SET(globals->check_timerfd, &fds);
+		if (maxsock < globals->check_timerfd)
+			maxsock = globals->check_timerfd;
+
 		maxsock = netsock_prepare_select(globals, &fds, maxsock);
 		maxsock = netsock_prepare_select(globals, &errfds, maxsock);
 
-		ret = pselect(maxsock + 1, &fds, NULL, &errfds, &tv, NULL);
+		ret = pselect(maxsock + 1, &fds, NULL, &errfds, NULL, NULL);
 
 		if (ret == -1) {
 			perror("main loop select failed ...");
@@ -459,21 +476,27 @@ int alfred_server(struct globals *globals)
 					continue;
 			}
 		}
-		clock_gettime(CLOCK_MONOTONIC, &last_check);
 
-		if (globals->opmode == OPMODE_PRIMARY) {
-			/* we are a primary */
-			printf("[%ld.%09ld] announce primary ...\n", last_check.tv_sec, last_check.tv_nsec);
-			announce_primary(globals);
-			sync_data(globals);
-		} else {
-			/* send local data to server */
-			update_server_info(globals);
-			push_local_data(globals);
+		if (FD_ISSET(globals->check_timerfd, &fds)) {
+			read(globals->check_timerfd, &timer_exp,
+			     sizeof(timer_exp));
+			clock_gettime(CLOCK_MONOTONIC, &now);
+
+			if (globals->opmode == OPMODE_PRIMARY) {
+				/* we are a primary */
+				printf("[%ld.%09ld] announce primary ...\n",
+				       now.tv_sec, now.tv_nsec);
+				announce_primary(globals);
+				sync_data(globals);
+			} else {
+				/* send local data to server */
+				update_server_info(globals);
+				push_local_data(globals);
+			}
+			purge_data(globals);
+			check_if_sockets(globals);
+			execute_update_command(globals);
 		}
-		purge_data(globals);
-		check_if_sockets(globals);
-		execute_update_command(globals);
 	}
 
 	netsock_close_all(globals);
