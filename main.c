@@ -163,7 +163,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"modeswitch",		required_argument,	NULL,	'M'},
 		{"change-interface",	required_argument,	NULL,	'I'},
 		{"change-bat-iface",	required_argument,	NULL,	'B'},
-		{"server-status",	required_argument,	NULL,	'S'},
+		{"server-status",	no_argument,		NULL,	'S'},
 		{"unix-path",		required_argument,	NULL,	'u'},
 		{"update-command",	required_argument,	NULL,	'c'},
 		{"version",		no_argument,		NULL,	'v'},
