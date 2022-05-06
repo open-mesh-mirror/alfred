@@ -1,5 +1,15 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2022.1 (2021-05-06)
+===================
+
+* coding style cleanups and refactoring
+* introduce 'server status' IPC call
+* bugs fixed:
+
+  - prevent potential read outside of buffer when parsing
+    alfred_change_interface_v0/alfred_change_bat_iface_v0 IPC message
+
 2022.0 (2021-02-03)
 ===================
 
