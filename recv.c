@@ -76,8 +76,11 @@ static int finish_alfred_push_data(struct globals *globals,
 		/* check that data was changed */
 		if (new_entry_created ||
 		    dataset->data.header.length != data_len ||
-		    memcmp(dataset->buf, data->data, data_len) != 0)
+		    memcmp(dataset->buf, data->data, data_len) != 0) {
 			changed_data_type(globals, data->header.type);
+			unix_sock_event_notify(globals, data->header.type,
+					       data->source);
+		}
 
 		/* free old buffer */
 		if (dataset->buf) {

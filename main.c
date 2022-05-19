@@ -39,6 +39,7 @@ static void alfred_usage(void)
 	printf("  -I, --change-interface [interface]  change to the specified interface(s)\n");
 	printf("  -B, --change-bat-iface [interface]  change to the specified batman-adv interface\n");
 	printf("  -S, --server-status                 request server status info such as mode & interfaces\n");
+	printf("  -E, --event-monitor                 monitor alfred data record update events\n");
 	printf("\n");
 	printf("server mode options:\n");
 	printf("  -i, --interface                     specify the interface (or comma separated list of interfaces) to listen on\n");
@@ -164,6 +165,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"change-interface",	required_argument,	NULL,	'I'},
 		{"change-bat-iface",	required_argument,	NULL,	'B'},
 		{"server-status",	no_argument,		NULL,	'S'},
+		{"event-monitor",	no_argument,		NULL,	'E'},
 		{"unix-path",		required_argument,	NULL,	'u'},
 		{"update-command",	required_argument,	NULL,	'c'},
 		{"version",		no_argument,		NULL,	'v'},
@@ -181,6 +183,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	memset(globals, 0, sizeof(*globals));
 
 	INIT_LIST_HEAD(&globals->interfaces);
+	INIT_LIST_HEAD(&globals->event_listeners);
 	globals->net_iface = NULL;
 	globals->opmode = OPMODE_SECONDARY;
 	globals->clientmode = CLIENT_NONE;
@@ -198,7 +201,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 
 	time_random_seed();
 
-	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:B:Su:dc:p:4:f", long_options,
+	while ((opt = getopt_long(argc, argv, "ms:r:hi:b:vV:M:I:B:SEu:dc:p:4:f", long_options,
 				  &opt_ind)) != -1) {
 		switch (opt) {
 		case 'r':
@@ -262,6 +265,9 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case 'S':
 			globals->clientmode = CLIENT_SERVER_STATUS;
+			break;
+		case 'E':
+			globals->clientmode = CLIENT_EVENT_MONITOR;
 			break;
 		case 'u':
 			globals->unix_path = optarg;
@@ -328,6 +334,8 @@ int main(int argc, char *argv[])
 		return alfred_client_change_bat_iface(globals);
 	case CLIENT_SERVER_STATUS:
 		return alfred_client_server_status(globals);
+	case CLIENT_EVENT_MONITOR:
+		return alfred_client_event_monitor(globals);
 	}
 
 	return 0;

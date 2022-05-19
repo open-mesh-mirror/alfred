@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/un.h>
@@ -26,6 +27,8 @@
 static void unix_sock_read(struct globals *globals,
 			   struct epoll_handle *handle __unused,
 			   struct epoll_event *ev __unused);
+static int unix_sock_register_listener(struct globals *globals,
+				       int client_sock);
 
 int unix_sock_open_daemon(struct globals *globals)
 {
@@ -99,6 +102,7 @@ static int unix_sock_add_data(struct globals *globals,
 			      struct alfred_push_data_v0 *push,
 			      int client_sock)
 {
+	bool new_entry_created = false;
 	struct alfred_data *data;
 	struct dataset *dataset;
 	int len, data_len, ret = -1;
@@ -153,9 +157,17 @@ static int unix_sock_add_data(struct globals *globals,
 			free(dataset);
 			goto err;
 		}
+		new_entry_created = true;
 	}
 	dataset->data_source = SOURCE_LOCAL;
 	clock_gettime(CLOCK_MONOTONIC, &dataset->last_seen);
+
+	/* check that data was changed */
+	if (new_entry_created ||
+	    dataset->data.header.length != data_len ||
+	    memcmp(dataset->buf, data->data, data_len) != 0)
+		unix_sock_event_notify(globals, data->header.type,
+				       data->source);
 
 	/* free old buffer */
 	free(dataset->buf);
@@ -554,6 +566,9 @@ static void unix_sock_read(struct globals *globals,
 	case ALFRED_SERVER_STATUS:
 		unix_sock_server_status(globals, client_sock);
 		break;
+	case ALFRED_EVENT_REGISTER:
+		unix_sock_register_listener(globals, client_sock);
+		break;
 	default:
 		/* unknown packet type */
 		goto err;
@@ -569,4 +584,125 @@ int unix_sock_close(struct globals *globals)
 {
 	close(globals->unix_sock);
 	return 0;
+}
+
+static void unix_sock_event_listener_free(struct event_listener *listener)
+{
+	list_del(&listener->list);
+	close(listener->fd);
+	free(listener);
+}
+
+static void unix_sock_event_listener_handle(struct globals *globals __unused,
+					    struct epoll_handle *handle,
+					    struct epoll_event *ev)
+{
+	struct event_listener *listener;
+	char buff[4];
+	int ret;
+
+	listener = container_of(handle, struct event_listener, epoll);
+
+	if (ev->events & EPOLLERR) {
+		fprintf(stderr, "Error on event listener detected: %d\n",
+			listener->fd);
+		unix_sock_event_listener_free(listener);
+		return;
+	}
+
+	if (ev->events & EPOLLIN) {
+		ret = recv(listener->fd, buff, sizeof(buff),
+			   MSG_PEEK | MSG_DONTWAIT);
+		/* listener has hung up */
+		if (ret == 0)
+			unix_sock_event_listener_free(listener);
+		else if (ret > 0) {
+			fprintf(stderr, "Event listener has written to socket: %d - closing\n",
+				listener->fd);
+			unix_sock_event_listener_free(listener);
+		}
+	}
+}
+
+static int unix_sock_register_listener(struct globals *globals, int client_sock)
+{
+	struct event_listener *listener;
+	struct epoll_event ev;
+	int ret;
+
+	ret = fcntl(client_sock, F_GETFL, 0);
+	if (ret < 0) {
+		perror("failed to get file status flags");
+		goto err;
+	}
+
+	ret = fcntl(client_sock, F_SETFL, ret | O_NONBLOCK);
+	if (ret < 0) {
+		perror("failed to set file status flags");
+		goto err;
+	}
+
+	listener = malloc(sizeof(*listener));
+	if (!listener)
+		goto err;
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = &listener->epoll;
+	listener->epoll.handler = unix_sock_event_listener_handle;
+
+	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, client_sock,
+		      &ev) == -1) {
+		perror("Failed to add epoll for event listener");
+		goto err;
+	}
+
+	listener->fd = client_sock;
+	list_add_tail(&listener->list, &globals->event_listeners);
+	return 0;
+
+err:
+	close(client_sock);
+	return -1;
+}
+
+static void unix_sock_event_notify_listener(struct event_listener *listener,
+					    uint8_t type,
+					    const uint8_t source[ETH_ALEN])
+{
+	struct alfred_event_notify_v0 notify;
+	int ret;
+
+	notify.header.type = ALFRED_EVENT_NOTIFY;
+	notify.header.version = ALFRED_VERSION;
+	notify.header.length = FIXED_TLV_LEN(notify);
+	notify.type = type;
+	memcpy(&notify.source, source, ETH_ALEN);
+
+	ret = write(listener->fd, &notify, sizeof(notify));
+	if (ret == sizeof(notify))
+		return;
+
+	unix_sock_event_listener_free(listener);
+}
+
+void unix_sock_events_close_all(struct globals *globals)
+{
+	struct event_listener *listener, *tmp;
+
+	list_for_each_entry_safe(listener, tmp,
+				 &globals->event_listeners, list) {
+		unix_sock_event_listener_free(listener);
+	}
+}
+
+void unix_sock_event_notify(struct globals *globals, uint8_t type,
+			    const uint8_t source[ETH_ALEN])
+{
+	struct event_listener *listener, *tmp;
+
+	/* if event notify is unsuccessful, listener socket is closed */
+	list_for_each_entry_safe(listener, tmp,
+				 &globals->event_listeners, list) {
+		unix_sock_event_notify_listener(listener, type, source);
+	}
 }

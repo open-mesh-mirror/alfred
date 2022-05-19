@@ -518,5 +518,6 @@ int alfred_server(struct globals *globals)
 
 	netsock_close_all(globals);
 	unix_sock_close(globals);
+	unix_sock_events_close_all(globals);
 	return 0;
 }

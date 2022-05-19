@@ -99,6 +99,7 @@ enum clientmode {
 	CLIENT_CHANGE_INTERFACE,
 	CLIENT_CHANGE_BAT_IFACE,
 	CLIENT_SERVER_STATUS,
+	CLIENT_EVENT_MONITOR,
 };
 
 struct interface {
@@ -118,8 +119,16 @@ struct interface {
 	struct list_head list;
 };
 
+struct event_listener {
+	int fd;
+	struct epoll_handle epoll;
+
+	struct list_head list;
+};
+
 struct globals {
 	struct list_head interfaces;
+	struct list_head event_listeners;
 
 	char *net_iface;
 	struct server *best_server;	/* NULL if we are a server ourselves */
@@ -171,6 +180,7 @@ int alfred_client_modeswitch(struct globals *globals);
 int alfred_client_change_interface(struct globals *globals);
 int alfred_client_change_bat_iface(struct globals *globals);
 int alfred_client_server_status(struct globals *globals);
+int alfred_client_event_monitor(struct globals *globals);
 /* recv.c */
 int recv_alfred_packet(struct globals *globals, struct interface *interface,
 		       int recv_sock);
@@ -199,6 +209,9 @@ int unix_sock_open_client(struct globals *globals);
 int unix_sock_close(struct globals *globals);
 int unix_sock_req_data_finish(struct globals *globals,
 			      struct transaction_head *head);
+void unix_sock_events_close_all(struct globals *globals);
+void unix_sock_event_notify(struct globals *globals, uint8_t type,\
+			    const uint8_t source[ETH_ALEN]);
 /* vis.c */
 int vis_update_data(struct globals *globals);
 /* netsock.c */

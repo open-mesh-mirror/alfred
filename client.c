@@ -452,3 +452,61 @@ err:
 	unix_sock_close(globals);
 	return 0;
 }
+
+int alfred_client_event_monitor(struct globals *globals)
+{
+	struct alfred_event_register_v0 event_register;
+	struct alfred_event_notify_v0 event_notify;
+	int ret, len;
+
+	if (unix_sock_open_client(globals))
+		return -1;
+
+	len = sizeof(event_register);
+
+	event_register.header.type = ALFRED_EVENT_REGISTER;
+	event_register.header.version = ALFRED_VERSION;
+	event_register.header.length = 0;
+
+	ret = write(globals->unix_sock, &event_register, len);
+	if (ret != len) {
+		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
+			__func__, ret, len, strerror(errno));
+		goto err;
+	}
+
+	while (true) {
+		len = read(globals->unix_sock, &event_notify, sizeof(event_notify));
+		if (len == 0) {
+			fprintf(stdout, "Server closed the connection\n");
+			goto err;
+		}
+
+		if (len < 0) {
+			perror("read from unix socket failed");
+			goto err;
+		}
+
+		if (len != sizeof(event_notify)) {
+			fprintf(stderr, "notify read bytes: %d (expected: %zu)\n",
+				len, sizeof(event_notify));
+				goto err;
+		}
+
+		if (event_notify.header.version != ALFRED_VERSION)
+			continue;
+
+		if (event_notify.header.type != ALFRED_EVENT_NOTIFY)
+			continue;
+
+		fprintf(stdout, "Event: type = %hhu, source = %02x:%02x:%02x:%02x:%02x:%02x\n",
+			event_notify.type,
+			event_notify.source[0], event_notify.source[1],
+			event_notify.source[2], event_notify.source[3],
+			event_notify.source[4], event_notify.source[5]);
+	}
+
+err:
+	unix_sock_close(globals);
+	return 0;
+}

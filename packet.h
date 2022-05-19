@@ -59,6 +59,8 @@ struct alfred_transaction_mgmt {
  * @ALFRED_STATUS_ERROR: Error was detected during the transaction
  * @ALFRED_MODESWITCH: Switch between different operation modes
  * @ALFRED_CHANGE_INTERFACE: Change the listening interface
+ * @ALFRED_EVENT_REGISTER: Request to be notified about alfred update events
+ * @ALFRED_EVENT_NOTIFY: Data record update has been received
  */
 enum alfred_packet_type {
 	ALFRED_PUSH_DATA = 0,
@@ -70,6 +72,8 @@ enum alfred_packet_type {
 	ALFRED_CHANGE_INTERFACE = 6,
 	ALFRED_CHANGE_BAT_IFACE = 7,
 	ALFRED_SERVER_STATUS = 8,
+	ALFRED_EVENT_REGISTER = 9,
+	ALFRED_EVENT_NOTIFY = 10,
 };
 
 /* packets */
@@ -227,6 +231,29 @@ struct alfred_server_status_bat_iface_v0 {
  */
 struct alfred_server_status_rep_v0 {
 	struct alfred_tlv header;
+} __packed;
+
+/**
+ * struct alfred_event_register_v0 - event registration message
+ * @header: TLV header describing the complete packet
+ *
+ * Sent by the client to daemon to register for data record updates
+ */
+struct alfred_event_register_v0 {
+	struct alfred_tlv header;
+} __packed;
+
+/**
+ * struct alfred_event_notify_v0 - event notification message
+ * @header: TLV header describing the complete packet
+ * @type: Type of the data triggering the event
+ *
+ * Sent by the daemon to client on data record update
+ */
+struct alfred_event_notify_v0 {
+	struct alfred_tlv header;
+	uint8_t type;
+	uint8_t source[ETH_ALEN];
 } __packed;
 
 /**
