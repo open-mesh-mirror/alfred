@@ -1,5 +1,12 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2022.2 (2022-07-26)
+===================
+
+* support event notification via unix socket
+* improve timing stability of transmitted announcement packets
+* reduce socket handling overhead when many clients and interfaces
+
 2022.1 (2022-05-06)
 ===================
 
