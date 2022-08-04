@@ -247,6 +247,7 @@ struct alfred_event_register_v0 {
  * struct alfred_event_notify_v0 - event notification message
  * @header: TLV header describing the complete packet
  * @type: Type of the data triggering the event
+ * @source: Mac address of the original source of the data
  *
  * Sent by the daemon to client on data record update
  */
