@@ -210,7 +210,7 @@ int unix_sock_close(struct globals *globals);
 int unix_sock_req_data_finish(struct globals *globals,
 			      struct transaction_head *head);
 void unix_sock_events_close_all(struct globals *globals);
-void unix_sock_event_notify(struct globals *globals, uint8_t type,\
+void unix_sock_event_notify(struct globals *globals, uint8_t type,
 			    const uint8_t source[ETH_ALEN]);
 /* vis.c */
 int vis_update_data(struct globals *globals);
