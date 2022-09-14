@@ -30,8 +30,7 @@ static void alfred_usage(void)
 	printf("client mode options:\n");
 	printf("  -s, --set-data [data type]          sets new data to distribute from stdin\n");
 	printf("                                      for the supplied data type (0-255)\n");
-	printf("  -r, --request [data type]           collect data from the network and prints\n");
-	printf("                                      it on stdout\n");
+	printf("  -r, --request [data type]           collect data from the network and print on stdout\n");
 	printf("  -d, --verbose                       Show extra information in the data output\n");
 	printf("  -V, --req-version                   specify the data version set for -s\n");
 	printf("  -M, --modeswitch primary            switch daemon to mode primary\n");
