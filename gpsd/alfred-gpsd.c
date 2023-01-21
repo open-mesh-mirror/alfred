@@ -217,8 +217,11 @@ static int gpsd_read_answer(struct globals *globals)
 	return 0;
 }
 
-/* Standard parsing of a GPS data source spec. Taken from gpsdclient.c */
-static void gpsd_source_spec(const char *arg, struct fixsource_t *source)
+/* Standard parsing of a GPS data source spec. Taken from gpsdclient.c
+ * remove when gpsd 3.25 is minimum supported version
+ */
+static void alfred_gpsd_source_spec(const char *arg,
+				    struct alfred_gpsd_fixsource_t *source)
 {
 	/* the casts attempt to head off a -Wwrite-strings warning */
 	source->server = (char *)"localhost";
@@ -425,7 +428,7 @@ static struct globals *gpsd_init(int argc, char *argv[])
 			gpsd_parse_location(globals, optarg);
 			break;
 		case 'g':
-			gpsd_source_spec(optarg, &globals->gpsdsource);
+			alfred_gpsd_source_spec(optarg, &globals->gpsdsource);
 			have_source = true;
 			break;
 		case 'u':
@@ -443,7 +446,7 @@ static struct globals *gpsd_init(int argc, char *argv[])
 	}
 
 	if (globals->source == SOURCE_GPSD && !have_source)
-		gpsd_source_spec(NULL, &globals->gpsdsource);
+		alfred_gpsd_source_spec(NULL, &globals->gpsdsource);
 
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		perror("could not register SIGPIPE handler");

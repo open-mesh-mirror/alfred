@@ -60,8 +60,10 @@ struct gpsd_v1 {
 #define GPSD_DATA_SIZE(gpsd_data)	\
 	(sizeof(*gpsd_data) + (ntohl(gpsd_data->tpv_len)))
 
-/* struct taken from gpsdclient.h */
-struct fixsource_t
+/* struct taken from gpsdclient.h
+ * remove when gpsd 3.25 is minimum supported version
+ */
+struct alfred_gpsd_fixsource_t
 {
 	char *spec;         /* pointer to actual storage */
 	char *server;
@@ -84,7 +86,7 @@ struct globals {
 	int unix_sock;
 	const char *unix_path;
 
-	struct fixsource_t gpsdsource;
+	struct alfred_gpsd_fixsource_t gpsdsource;
 	struct gps_data_t gpsdata;
 	char * tpv;
 };
