@@ -108,10 +108,6 @@ static int unix_sock_add_data(struct globals *globals,
 	int len, data_len, ret = -1;
 	struct interface *interface;
 
-	interface = netsock_first_interface(globals);
-	if (!interface)
-		goto err;
-
 	len = ntohs(push->header.length);
 
 	if (len < (int)(sizeof(*push) - sizeof(push->header)))
@@ -133,11 +129,26 @@ static int unix_sock_add_data(struct globals *globals,
 	 * source addresses. Otherwise the data would not be
 	 * synced between primary servers.
 	 */
-	if (is_valid_ether_addr(data->source)) {
+	if (is_iface_disabled(globals->net_iface)) {
+		if (!is_valid_ether_addr(data->source))
+			goto err;
+
+		if (globals->opmode != OPMODE_PRIMARY)
+			goto err;
+
+	} else if (is_valid_ether_addr(data->source)) {
+		interface = netsock_first_interface(globals);
+		if (!interface)
+			goto err;
+
 		if (memcmp(data->source, &interface->hwaddr, ETH_ALEN) != 0 &&
 		    globals->opmode != OPMODE_PRIMARY)
 			goto err;
 	} else {
+		interface = netsock_first_interface(globals);
+		if (!interface)
+			goto err;
+
 		memcpy(data->source, &interface->hwaddr, ETH_ALEN);
 	}
 
