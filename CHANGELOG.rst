@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2023.2 (2023-08-16)
+===================
+
+* receive data with valid source on unix sock without active interface
+
 2023.1 (2023-05-25)
 ===================
 
