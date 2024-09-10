@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <arpa/inet.h>
 #ifdef CONFIG_ALFRED_CAPABILITIES
 #include <sys/capability.h>
 #endif
@@ -322,7 +323,19 @@ static int netsock_open(struct globals *globals, struct interface *interface)
 	enable_raw_bind_capability(0);
 
 	if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
-		perror("can't bind");
+		char ipstr_buf[INET6_ADDRSTRLEN];
+		const char *ipstr;
+
+		ipstr = inet_ntop(AF_INET6, &interface->address.ipv6.s6_addr,
+				  ipstr_buf, INET6_ADDRSTRLEN);
+
+		if (errno == EADDRNOTAVAIL)
+			fprintf(stderr, "can't bind to interface %s; "
+				"expected ipv6 address not found: %s\n",
+				interface->interface,
+				ipstr);
+		else
+			perror("can't bind");
 		goto err;
 	}
 
