@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2024.3 (2024-10-15)
+===================
+
+* improve output for IPv6 related address errors
+
 2024.2 (2024-06-20)
 ===================
 
