@@ -7,7 +7,7 @@
  */
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION			"2024.4"
+#define SOURCE_VERSION			"2025.0"
 #endif
 
 #include <net/ethernet.h>

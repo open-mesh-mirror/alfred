@@ -25,7 +25,7 @@
 #include "../list.h"
 
 #ifndef SOURCE_VERSION
-#define SOURCE_VERSION				"2024.4"
+#define SOURCE_VERSION				"2025.0"
 #endif
 
 #define ALFRED_SOCK_PATH_DEFAULT		"/var/run/alfred.sock"
