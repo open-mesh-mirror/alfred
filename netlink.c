@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (C) B.A.T.M.A.N. contributors:
  *
- * Marek Lindner <mareklindner@neomailbox.ch>, Andrew Lunn <andrew@lunn.ch>
+ * Marek Lindner <marek.lindner@mailbox.org>, Andrew Lunn <andrew@lunn.ch>
  *
  * License-Filename: LICENSES/preferred/GPL-2.0
  */
