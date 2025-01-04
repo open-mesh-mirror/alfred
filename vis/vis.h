@@ -69,8 +69,8 @@ struct vis_list_entry {
 };
 
 #define VIS_DATA_SIZE(vis_data)	\
-	(sizeof(*vis_data) + (vis_data)->iface_n * sizeof(struct vis_iface) \
-	 		   + (vis_data)->entries_n * sizeof(struct vis_entry))
+	(sizeof(*vis_data) + (vis_data)->iface_n * sizeof(struct vis_iface) + \
+	 (vis_data)->entries_n * sizeof(struct vis_entry))
 
 struct globals {
 	const char *interface;

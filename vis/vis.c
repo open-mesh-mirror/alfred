@@ -379,7 +379,7 @@ static char *get_iface_status_netlink(unsigned int meshif, unsigned int hardif,
 		goto err_free_sock;
 
 	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, get_iface_status_netlink_parse,
-		iface_status);
+		  iface_status);
 
 	msg = nlmsg_alloc();
 	if (!msg)

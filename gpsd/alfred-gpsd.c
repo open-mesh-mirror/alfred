@@ -508,7 +508,7 @@ static int gpsd_server(struct globals *globals)
 			FD_ZERO(&fds);
 
 			if (globals->source == SOURCE_GPSD &&
-				globals->gpsdata.gps_fd != -1) {
+			    globals->gpsdata.gps_fd != -1) {
 				FD_SET(globals->gpsdata.gps_fd, &fds);
 				max_fd = globals->gpsdata.gps_fd + 1;
 			} else {

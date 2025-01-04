@@ -433,7 +433,7 @@ int alfred_client_server_status(struct globals *globals)
 			status_net_iface->net_iface[sizeof(status_net_iface->net_iface) - 1] = 0;
 			printf("- interface: %s\n", status_net_iface->net_iface);
 			printf("\t- status: %s\n",
-				status_net_iface->active == 1 ? "active" : "inactive");
+			       status_net_iface->active == 1 ? "active" : "inactive");
 			break;
 		case ALFRED_SERVER_BAT_IFACE:
 			if (tlvsize != sizeof(*status_bat_iface))
