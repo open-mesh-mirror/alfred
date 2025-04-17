@@ -1,5 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2025.1 (2025-04-17)
+===================
+
+* coding style cleanups and refactoring
+
 2025.0 (2025-02-07)
 ===================
 
