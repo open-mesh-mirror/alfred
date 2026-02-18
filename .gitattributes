@@ -2,6 +2,3 @@
 # License-Filename: LICENSES/preferred/GPL-2.0
 
 *.[ch] diff=cpp
-
-/.gitignore export-ignore
-/.gitattributes export-ignore
