@@ -404,8 +404,8 @@ static void sync_period_timer(struct globals *globals,
 
 	if (globals->opmode == OPMODE_PRIMARY) {
 		/* we are a primary */
-		printf("[%ld.%09ld] announce primary ...\n",
-		       now.tv_sec, now.tv_nsec);
+		printf("[%lld.%09u] announce primary ...\n",
+		       (long long)now.tv_sec, (unsigned int)now.tv_nsec);
 		announce_primary(globals);
 		sync_data(globals);
 	} else {
