@@ -1,5 +1,13 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2026.1 (2026-04-08)
+===================
+
+* coding style cleanups and refactoring
+* bugs squashed:
+
+  - fix printing of timespec
+
 2026.0 (2026-02-24)
 ===================
 
