@@ -2,3 +2,4 @@
   midmask = https://lore.kernel.org/%s
   linkmask = https://patch.msgid.link/%s
   send-series-to = b.a.t.m.a.n@lists.open-mesh.org
+  thanks-commit-url-mask = https://git.open-mesh.org/alfred/c/%.12s
