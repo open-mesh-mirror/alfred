@@ -47,7 +47,8 @@ static char *mac_to_str(uint8_t *mac)
 static int get_if_mac(char *ifname, uint8_t *mac)
 {
 	struct ifreq ifr;
-	int sock, ret;
+	int sock;
+	int ret;
 
 	strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
@@ -111,8 +112,8 @@ static int get_if_index_byname(struct globals *globals, char *ifname)
 static int get_if_index_devindex(struct globals *globals, int devindex)
 {
 	struct iface_list_entry *i_entry;
-	char *ifname;
 	char ifnamebuf[IF_NAMESIZE];
+	char *ifname;
 	int i;
 
 	if (!devindex)
@@ -182,9 +183,9 @@ static int parse_transtable_local_netlink_cb(struct nl_msg *msg, void *arg)
 	struct nlattr *attrs[BATADV_ATTR_MAX+1];
 	struct nlmsghdr *nlh = nlmsg_hdr(msg);
 	struct nlquery_opts *query_opts = arg;
+	struct vis_list_entry *v_entry;
 	struct vis_netlink_opts *opts;
 	struct genlmsghdr *ghdr;
-	struct vis_list_entry *v_entry;
 	uint8_t *addr;
 
 	opts = container_of(query_opts, struct vis_netlink_opts,
@@ -243,8 +244,10 @@ static int parse_transtable_local(struct globals *globals)
 
 static void clear_lists(struct globals *globals)
 {
-	struct vis_list_entry *v_entry, *v_entry_safe;
-	struct iface_list_entry *i_entry, *i_entry_safe;
+	struct iface_list_entry *i_entry_safe;
+	struct vis_list_entry *v_entry_safe;
+	struct iface_list_entry *i_entry;
+	struct vis_list_entry *v_entry;
 
 	list_for_each_entry_safe(v_entry, v_entry_safe, &globals->entry_list,
 				 list) {
@@ -514,13 +517,13 @@ static int parse_orig_list_netlink_cb(struct nl_msg *msg, void *arg)
 	struct nlattr *attrs[BATADV_ATTR_MAX+1];
 	struct nlmsghdr *nlh = nlmsg_hdr(msg);
 	struct nlquery_opts *query_opts = arg;
+	struct vis_list_entry *v_entry;
 	struct vis_netlink_opts *opts;
 	struct genlmsghdr *ghdr;
-	struct vis_list_entry *v_entry;
-	uint8_t *orig;
-	uint8_t *neigh;
-	uint8_t tq;
 	uint32_t hardif;
+	uint8_t *neigh;
+	uint8_t *orig;
+	uint8_t tq;
 
 	opts = container_of(query_opts, struct vis_netlink_opts,
 			    query_opts);
@@ -589,7 +592,8 @@ static int parse_orig_list(struct globals *globals)
 
 static int vis_publish_data(struct globals *globals)
 {
-	int len, ret;
+	int len;
+	int ret;
 
 	/* to push data we have to add a push header, the header for the data
 	 * and our own data type.
@@ -620,7 +624,8 @@ static int compile_vis_data(struct globals *globals)
 	struct iface_list_entry *i_entry;
 	struct vis_list_entry *v_entry;
 	struct vis_entry *vis_entries;
-	int iface_n = 0, entries_n = 0;
+	int entries_n = 0;
+	int iface_n = 0;
 
 	list_for_each_entry(i_entry, &globals->iface_list, list) {
 		memcpy(&globals->vis_data->ifaces[iface_n], i_entry->mac, ETH_ALEN);
@@ -684,11 +689,12 @@ static int vis_request_data(struct globals *globals)
 
 static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len)
 {
-	static uint8_t buf[65536];
-	struct alfred_tlv *tlv;
 	struct alfred_push_data_v0 *push;
+	static uint8_t buf[65536];
 	struct alfred_data *data;
-	int l, ret;
+	struct alfred_tlv *tlv;
+	int ret;
+	int l;
 
 	ret = read(sock, buf, sizeof(*tlv));
 	if (ret < 0)
@@ -836,8 +842,8 @@ static void vis_jsondoc_preamble(void)
 
 static void vis_jsondoc_interfaces(uint8_t iface_n, struct vis_iface *ifaces)
 {
-	int i;
 	static bool first_interface = true;
+	int i;
 
 	if (first_interface)
 		first_interface = false;
@@ -954,10 +960,10 @@ static const struct vis_print_ops vis_jsondoc_ops =
 static int vis_read_answer(struct globals *globals)
 {
 	const struct vis_print_ops *ops;
+	struct vis_entry *vis_entries;
+	struct vis_iface *ifaces;
 	struct vis_v1 *vis_data;
 	uint16_t len;
-	struct vis_iface *ifaces;
-	struct vis_entry *vis_entries;
 
 	switch (globals->vis_format) {
 	case FORMAT_DOT:
@@ -1029,8 +1035,6 @@ static void vis_usage(void)
 
 static struct globals *vis_init(int argc, char *argv[])
 {
-	int opt, opt_ind;
-	struct globals *globals;
 	struct option long_options[] = {
 		{"server",	no_argument,		NULL,	's'},
 		{"interface",	required_argument,	NULL,	'i'},
@@ -1040,6 +1044,9 @@ static struct globals *vis_init(int argc, char *argv[])
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
 	};
+	struct globals *globals;
+	int opt_ind;
+	int opt;
 
 	globals = &vis_globals;
 	memset(globals, 0, sizeof(*globals));

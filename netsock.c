@@ -40,7 +40,9 @@ alfred_addr alfred_mcast = {
 
 static int server_compare(void *d1, void *d2)
 {
-	struct server *s1 = d1, *s2 = d2;
+	struct server *s1 = d1;
+	struct server *s2 = d2;
+
 	/* compare source and type */
 	if (memcmp(&s1->hwaddr, &s2->hwaddr, sizeof(s1->hwaddr)) == 0)
 		return 1;
@@ -69,7 +71,8 @@ static int server_choose(void *d1, int size)
 
 void netsock_close_all(struct globals *globals)
 {
-	struct interface *interface, *is;
+	struct interface *interface;
+	struct interface *is;
 
 	list_for_each_entry_safe(interface, is, &globals->interfaces, list) {
 		if (interface->netsock >= 0)
@@ -112,8 +115,10 @@ static struct interface *netsock_find_interface(struct globals *globals,
 
 int netsock_set_interfaces(struct globals *globals, char *interfaces)
 {
-	char *input, *saveptr, *token;
 	struct interface *interface;
+	char *saveptr;
+	char *input;
+	char *token;
 
 	netsock_close_all(globals);
 
@@ -170,9 +175,9 @@ static int enable_raw_bind_capability(int enable)
 	int ret = 0;
 
 #ifdef CONFIG_ALFRED_CAPABILITIES
-	cap_t cap_cur;
-	cap_flag_value_t cap_flag;
 	cap_value_t cap_net_raw = CAP_NET_RAW;
+	cap_flag_value_t cap_flag;
+	cap_t cap_cur;
 
 	if (enable)
 		cap_flag = CAP_SET;
@@ -252,12 +257,13 @@ static void netsock_mcast_handle_event(struct globals *globals,
 
 static int netsock_open(struct globals *globals, struct interface *interface)
 {
-	int sock;
-	int sock_mc;
-	struct sockaddr_in6 sin6, sin6_mc;
+	struct sockaddr_in6 sin6_mc;
+	struct sockaddr_in6 sin6;
 	struct ipv6_mreq mreq;
 	struct epoll_event ev;
 	struct ifreq ifr;
+	int sock_mc;
+	int sock;
 	int ret;
 
 	interface->netsock = -1;
@@ -410,12 +416,13 @@ err:
 
 static int netsock_open4(struct globals *globals, struct interface *interface)
 {
-	int sock;
-	int sock_mc;
-	struct sockaddr_in sin4, sin_mc;
+	struct sockaddr_in sin_mc;
+	struct sockaddr_in sin4;
 	struct epoll_event ev;
 	struct ip_mreq mreq;
 	struct ifreq ifr;
+	int sock_mc;
+	int sock;
 	int ret;
 
 	interface->netsock = -1;
@@ -559,9 +566,9 @@ err:
 
 int netsock_open_all(struct globals *globals)
 {
+	struct interface *interface;
 	int num_socks = 0;
 	int ret;
-	struct interface *interface;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
 		if (globals->ipv4mode)

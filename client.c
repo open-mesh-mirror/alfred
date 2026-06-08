@@ -22,14 +22,18 @@
 
 int alfred_client_request_data(struct globals *globals)
 {
-	unsigned char buf[MAX_PAYLOAD], *pos;
 	struct alfred_request_v0 request;
 	struct alfred_push_data_v0 *push;
 	struct alfred_status_v0 *status;
-	struct alfred_tlv *tlv;
+	unsigned char buf[MAX_PAYLOAD];
 	struct alfred_data *data;
-	int ret, len, data_len, i;
 	const size_t buf_data_len = sizeof(buf) - sizeof(*push) - sizeof(*data);
+	struct alfred_tlv *tlv;
+	unsigned char *pos;
+	int data_len;
+	int ret;
+	int len;
+	int i;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -135,10 +139,11 @@ recv_err:
 
 int alfred_client_set_data(struct globals *globals)
 {
-	unsigned char buf[MAX_PAYLOAD];
 	struct alfred_push_data_v0 *push;
+	unsigned char buf[MAX_PAYLOAD];
 	struct alfred_data *data;
-	int ret, len;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -178,7 +183,8 @@ int alfred_client_set_data(struct globals *globals)
 int alfred_client_modeswitch(struct globals *globals)
 {
 	struct alfred_modeswitch_v0 modeswitch;
-	int ret, len;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -213,8 +219,8 @@ int alfred_client_modeswitch(struct globals *globals)
 
 static int check_interface(const char *iface)
 {
-	int sock = -1;
 	struct ifreq ifr;
+	int sock = -1;
 
 	if (strlen(iface) > IFNAMSIZ) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
@@ -245,9 +251,12 @@ static int check_interface(const char *iface)
 int alfred_client_change_interface(struct globals *globals)
 {
 	struct alfred_change_interface_v0 change_interface;
-	int ret, len;
-	char *input, *token, *saveptr;
 	size_t interface_len;
+	char *saveptr;
+	char *input;
+	char *token;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -294,8 +303,9 @@ int alfred_client_change_interface(struct globals *globals)
 int alfred_client_change_bat_iface(struct globals *globals)
 {
 	struct alfred_change_bat_iface_v0 change_bat_iface;
-	int ret, len;
 	size_t interface_len;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -331,11 +341,15 @@ int alfred_client_server_status(struct globals *globals)
 	struct alfred_server_status_net_iface_v0 *status_net_iface;
 	struct alfred_server_status_bat_iface_v0 *status_bat_iface;
 	struct alfred_server_status_op_mode_v0 *status_op_mode;
-	struct alfred_server_status_req_v0 status_req;
 	struct alfred_server_status_rep_v0 *status_rep;
-	int ret, tlvsize, headsize, len, consumed;
+	struct alfred_server_status_req_v0 status_req;
 	struct alfred_tlv *status_tlv;
 	uint8_t buf[MAX_PAYLOAD];
+	int headsize;
+	int consumed;
+	int tlvsize;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;
@@ -457,7 +471,8 @@ int alfred_client_event_monitor(struct globals *globals)
 {
 	struct alfred_event_register_v0 event_register;
 	struct alfred_event_notify_v0 event_notify;
-	int ret, len;
+	int ret;
+	int len;
 
 	if (unix_sock_open_client(globals))
 		return -1;

@@ -260,12 +260,12 @@ static __inline__ void set_bit(size_t bit, unsigned long *bitmap)
 static __inline__ size_t find_next_bit(unsigned long *bitmap, size_t bits,
 				       size_t start)
 {
-	size_t i;
-	size_t pos;
-	unsigned long t;
-	size_t l = BITS_TO_LONGS(bits);
-	size_t first_long = start / BITS_PER_LONG;
 	size_t long_lower = start - (start % BITS_PER_LONG);
+	size_t first_long = start / BITS_PER_LONG;
+	size_t l = BITS_TO_LONGS(bits);
+	unsigned long t;
+	size_t pos;
+	size_t i;
 
 	if (start >= bits)
 		return bits;
@@ -325,8 +325,8 @@ static __inline__ size_t find_next_bit(unsigned long *bitmap, size_t bits,
 static __inline__ size_t bitmap_weight(const unsigned long *bitmap, size_t bits)
 {
 	size_t l = BITS_TO_LONGS(bits);
-	size_t i;
 	size_t sum = 0;
+	size_t i;
 
 	for (i = 0; i < l - 1; i++)
 		sum += hweight_long(bitmap[i]);

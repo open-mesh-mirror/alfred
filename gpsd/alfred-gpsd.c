@@ -40,7 +40,8 @@ static int alfred_open_sock(struct globals *globals)
 
 static int gpsd_publish_data(struct globals *globals)
 {
-	int len, ret;
+	int len;
+	int ret;
 
 	/* to push data we have to add a push header, the header for the data
 	 * and our own data type.
@@ -135,11 +136,12 @@ static int gpsd_request_data(struct globals *globals)
 static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 						  uint8_t *source)
 {
-	static uint8_t buf[65536];
-	struct alfred_tlv *tlv;
 	struct alfred_push_data_v0 *push;
+	static uint8_t buf[65536];
 	struct alfred_data *data;
-	int l, ret;
+	struct alfred_tlv *tlv;
+	int ret;
+	int l;
 
 	ret = read(sock, buf, sizeof(*tlv));
 	if (ret < 0)
@@ -184,9 +186,9 @@ static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 static int gpsd_read_answer(struct globals *globals)
 {
 	struct gpsd_v1 *gpsd_data;
-	uint16_t len;
 	uint8_t source[ETH_ALEN];
 	bool first_line = true;
+	uint16_t len;
 
 	printf("[\n");
 
@@ -301,14 +303,14 @@ static void gpsd_connect_gpsd(struct globals *globals)
 
 static void gpsd_read_gpsd(struct globals *globals)
 {
-	ssize_t ret;
-	size_t cnt;
-	bool eol = false;
-	char buf[4096];
 	const size_t tpv_size = sizeof(globals->buf) -
 				sizeof(*globals->push) -
 				sizeof(struct alfred_data) -
 				sizeof(*globals->gpsd_data);
+	bool eol = false;
+	char buf[4096];
+	ssize_t ret;
+	size_t cnt;
 
 	cnt = 0;
 	do {
@@ -360,8 +362,10 @@ static void gpsd_usage(void)
 static void gpsd_parse_location(struct globals *globals,
 				const char * optarg)
 {
+	float lat;
+	float lon;
+	float alt;
 	int n;
-	float lat, lon, alt;
 
 	n = sscanf(optarg, "%f,%f,%f", &lat, &lon, &alt);
 	if (n != 3) {
@@ -396,9 +400,6 @@ static void gpsd_parse_location(struct globals *globals,
 
 static struct globals *gpsd_init(int argc, char *argv[])
 {
-	bool have_source = false;
-	int opt, opt_ind;
-	struct globals *globals;
 	struct option long_options[] = {
 		{"server",	no_argument,		NULL,	's'},
 		{"location",    required_argument,	NULL,	'l'},
@@ -408,6 +409,10 @@ static struct globals *gpsd_init(int argc, char *argv[])
 		{"version",	no_argument,		NULL,	'v'},
 		{NULL,		0,			NULL,	0},
 	};
+	bool have_source = false;
+	struct globals *globals;
+	int opt_ind;
+	int opt;
 
 	globals = &gpsd_globals;
 	memset(globals, 0, sizeof(*globals));
@@ -455,16 +460,17 @@ static struct globals *gpsd_init(int argc, char *argv[])
 
 static int gpsd_server(struct globals *globals)
 {
-	struct timeval tv;
-	fd_set fds;
-	int max_fd, ret;
 	const size_t overhead = sizeof(*globals->push) +
 		sizeof(struct alfred_data);
 	const size_t tpv_size = sizeof(globals->buf) -
 				sizeof(*globals->push) -
 				sizeof(struct alfred_data) -
 				sizeof(*globals->gpsd_data);
+	struct timeval tv;
 	long interval;
+	fd_set fds;
+	int max_fd;
+	int ret;
 
 	globals->push = (struct alfred_push_data_v0 *) globals->buf;
 	globals->gpsd_data = (struct gpsd_v1 *)

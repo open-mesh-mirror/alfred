@@ -28,10 +28,11 @@ static int finish_alfred_push_data(struct globals *globals,
 				   struct ether_addr mac,
 				   struct alfred_push_data_v0 *push)
 {
-	unsigned int len, data_len;
-	bool new_entry_created;
 	struct alfred_data *data;
 	struct dataset *dataset;
+	bool new_entry_created;
+	unsigned int data_len;
+	unsigned int len;
 	uint8_t *pos;
 
 	/* test already done in process_alfred_push_data */
@@ -141,7 +142,8 @@ transaction_add(struct globals *globals, struct ether_addr mac, uint16_t id)
 struct transaction_head *transaction_clean(struct globals *globals,
 					   struct transaction_head *head)
 {
-	struct transaction_packet *transaction_packet, *safe;
+	struct transaction_packet *transaction_packet;
+	struct transaction_packet *safe;
 
 	list_for_each_entry_safe(transaction_packet, safe, &head->packet_list,
 				 list) {
@@ -158,7 +160,8 @@ static int finish_alfred_transaction(struct globals *globals,
 				     struct transaction_head *head,
 				     struct ether_addr mac)
 {
-	struct transaction_packet *transaction_packet, *safe;
+	struct transaction_packet *transaction_packet;
+	struct transaction_packet *safe;
 
 	/* finish when all packets received */
 	if (!transaction_finished(head))
@@ -188,12 +191,13 @@ static int process_alfred_push_data(struct globals *globals,
 				    alfred_addr *source,
 				    struct alfred_push_data_v0 *push)
 {
-	unsigned int len;
-	struct ether_addr mac;
-	int ret;
-	struct transaction_head search, *head;
 	struct transaction_packet *transaction_packet;
+	struct transaction_head search;
+	struct transaction_head *head;
+	struct ether_addr mac;
+	unsigned int len;
 	int found;
+	int ret;
 
 	if (globals->ipv4mode)
 		ret = ipv4_to_mac(interface, source, &mac);
@@ -325,7 +329,8 @@ static int process_alfred_status_txend(struct globals *globals,
 				       alfred_addr *source,
 				       struct alfred_status_v0 *request)
 {
-	struct transaction_head search, *head;
+	struct transaction_head search;
+	struct transaction_head *head;
 	struct ether_addr mac;
 	unsigned int len;
 	int ret;
@@ -376,14 +381,14 @@ err:
 int recv_alfred_packet(struct globals *globals, struct interface *interface,
 		       int recv_sock)
 {
-	uint8_t buf[MAX_PAYLOAD];
-	ssize_t length;
-	struct alfred_tlv *packet;
+	struct sockaddr_in6 source6;
 	struct sockaddr_in *source;
 	struct sockaddr_in source4;
-	struct sockaddr_in6 source6;
-	socklen_t sourcelen;
+	struct alfred_tlv *packet;
 	alfred_addr alfred_source;
+	uint8_t buf[MAX_PAYLOAD];
+	socklen_t sourcelen;
+	ssize_t length;
 
 	if (interface->netsock < 0)
 		return -1;

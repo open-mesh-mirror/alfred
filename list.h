@@ -247,8 +247,8 @@ static inline void list_splice(struct list_head *list,
 static inline void list_splice_tail(struct list_head *list,
 				    struct list_head *head)
 {
-	struct list_head *head_last = head->prev;
 	struct list_head *list_first = list->next;
+	struct list_head *head_last = head->prev;
 	struct list_head *list_last = list->prev;
 
 	if (list_empty(list))
@@ -628,8 +628,8 @@ static inline void hlist_add_behind(struct hlist_node *new_node,
  */
 static inline void hlist_del(struct hlist_node *node)
 {
-	struct hlist_node *next = node->next;
 	struct hlist_node **pprev = node->pprev;
+	struct hlist_node *next = node->next;
 
 	if (pprev)
 		*pprev = next;

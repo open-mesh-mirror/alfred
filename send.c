@@ -40,15 +40,15 @@ int push_data(struct globals *globals, struct interface *interface,
 	      alfred_addr *destination, enum data_source max_source_level,
 	      int type_filter, uint16_t tx_id)
 {
-	struct hash_it_t *hashit = NULL;
-	uint8_t buf[MAX_PAYLOAD];
-	struct alfred_push_data_v0 *push;
-	struct alfred_data *data;
-	uint16_t total_length = 0;
-	size_t tlv_length;
-	uint16_t seqno = 0;
-	uint16_t length;
 	struct alfred_status_v0 status_end;
+	struct alfred_push_data_v0 *push;
+	struct hash_it_t *hashit = NULL;
+	uint16_t total_length = 0;
+	uint8_t buf[MAX_PAYLOAD];
+	struct alfred_data *data;
+	uint16_t seqno = 0;
+	size_t tlv_length;
+	uint16_t length;
 
 	push = (struct alfred_push_data_v0 *)buf;
 	push->header.type = ALFRED_PUSH_DATA;
@@ -160,11 +160,11 @@ int push_local_data(struct globals *globals)
 ssize_t send_alfred_packet(struct globals *globals, struct interface *interface,
 			   const alfred_addr *dest, void *buf, int length)
 {
-	ssize_t ret;
-	struct sockaddr *dest_addr;
 	struct sockaddr_in6 dest_addr6;
 	struct sockaddr_in dest_addr4;
+	struct sockaddr *dest_addr;
 	socklen_t slen;
+	ssize_t ret;
 
 	if (globals->ipv4mode) {
 		memset(&dest_addr4, 0, sizeof(dest_addr4));

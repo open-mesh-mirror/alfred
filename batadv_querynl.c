@@ -39,12 +39,12 @@ struct translate_mac_netlink_opts {
 static int translate_mac_netlink_cb(struct nl_msg *msg, void *arg)
 {
 	struct nlattr *attrs[BATADV_ATTR_MAX + 1];
+	struct translate_mac_netlink_opts *opts;
 	struct nlmsghdr *nlh = nlmsg_hdr(msg);
 	struct nlquery_opts *query_opts = arg;
-	struct translate_mac_netlink_opts *opts;
-	struct genlmsghdr *ghdr;
 	struct ether_addr mac_addr;
 	struct ether_addr mac_orig;
+	struct genlmsghdr *ghdr;
 	uint8_t *addr;
 	uint8_t *orig;
 
@@ -118,8 +118,8 @@ static int get_tq_netlink_cb(struct nl_msg *msg, void *arg)
 	struct nlquery_opts *query_opts = arg;
 	struct get_tq_netlink_opts *opts;
 	struct genlmsghdr *ghdr;
-	uint8_t *orig;
 	struct ether_addr mac;
+	uint8_t *orig;
 	uint8_t tq;
 
 	opts = container_of(query_opts, struct get_tq_netlink_opts,

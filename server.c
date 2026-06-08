@@ -71,10 +71,11 @@ static int tx_compare(void *d1, void *d2)
 static int tx_choose(void *d1, int size)
 {
 	struct transaction_head *txh1 = d1;
-	unsigned char *key = (unsigned char *)&txh1->server_addr;
+	unsigned char *key;
 	uint32_t hash = 0;
 	size_t i;
 
+	key = (unsigned char *)&txh1->server_addr;
 	for (i = 0; i < ETH_ALEN; i++) {
 		hash += key[i];
 		hash += (hash << 10);
@@ -104,10 +105,10 @@ static int create_hashes(struct globals *globals)
 
 static int set_best_server(struct globals *globals)
 {
-	struct hash_it_t *hashit = NULL;
 	struct server *best_server = NULL;
-	int best_tq = -1;
+	struct hash_it_t *hashit = NULL;
 	struct interface *interface;
+	int best_tq = -1;
 
 	list_for_each_entry(interface, &globals->interfaces, list) {
 		while (NULL != (hashit = hash_iterate(interface->server_hash,
@@ -137,8 +138,9 @@ void changed_data_type(struct globals *globals, uint8_t arg)
 static int purge_data(struct globals *globals)
 {
 	struct hash_it_t *hashit = NULL;
-	struct timespec now, diff;
 	struct interface *interface;
+	struct timespec diff;
+	struct timespec now;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
@@ -196,11 +198,11 @@ static int purge_data(struct globals *globals)
 
 static void update_server_info(struct globals *globals)
 {
+	struct hashtable_t *orig_hash = NULL;
+	struct hashtable_t *tg_hash = NULL;
 	struct hash_it_t *hashit = NULL;
 	struct interface *interface;
 	struct ether_addr *macaddr;
-	struct hashtable_t *tg_hash = NULL;
-	struct hashtable_t *orig_hash = NULL;
 
 	/* TQ is not used for primary sync mode */
 	if (globals->opmode == OPMODE_PRIMARY)
@@ -249,8 +251,8 @@ free_tg_hash:
 
 static void check_if_socket(struct interface *interface, struct globals *globals)
 {
-	int sock;
 	struct ifreq ifr;
+	int sock;
 
 	if (interface->netsock < 0)
 		return;
@@ -299,8 +301,9 @@ close:
 
 static void check_if_sockets(struct globals *globals)
 {
-	struct timespec now, diff;
 	struct interface *interface;
+	struct timespec diff;
+	struct timespec now;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	time_diff(&now, &globals->if_check, &diff);
@@ -316,11 +319,11 @@ static void check_if_sockets(struct globals *globals)
 
 static void execute_update_command(struct globals *globals)
 {
-	pid_t script_pid;
-	size_t command_len;
-	char *command;
-	size_t data_type;
 	size_t changed_data_type_count;
+	size_t command_len;
+	pid_t script_pid;
+	size_t data_type;
+	char *command;
 	/* data type is limited by ALFRED_NUM_TYPES to 255 (3 chars), plus
 	 * 1x space for appending + terminating null byte
 	 */

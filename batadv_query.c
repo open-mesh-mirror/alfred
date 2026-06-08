@@ -28,9 +28,9 @@ static int enable_net_admin_capability(int enable)
 	int ret = 0;
 
 #ifdef CONFIG_ALFRED_CAPABILITIES
-	cap_t cap_cur;
-	cap_flag_value_t cap_flag;
 	cap_value_t cap_net_admin = CAP_NET_ADMIN;
+	cap_flag_value_t cap_flag;
+	cap_t cap_cur;
 
 	if (enable)
 		cap_flag = CAP_SET;
@@ -143,7 +143,8 @@ int batadv_interface_check(const char *mesh_iface)
 
 static int tg_compare(void *d1, void *d2)
 {
-	struct tg_entry *s1 = d1, *s2 = d2;
+	struct tg_entry *s1 = d1;
+	struct tg_entry *s2 = d2;
 
 	if (memcmp(&s1->mac, &s2->mac, sizeof(s1->mac)) == 0)
 		return 1;
@@ -227,7 +228,8 @@ struct ether_addr *translate_mac(struct hashtable_t *tg_hash,
 
 static int orig_compare(void *d1, void *d2)
 {
-	struct orig_entry *s1 = d1, *s2 = d2;
+	struct orig_entry *s1 = d1;
+	struct orig_entry *s2 = d2;
 
 	if (memcmp(&s1->mac, &s2->mac, sizeof(s1->mac)) == 0)
 		return 1;

@@ -67,11 +67,11 @@ static int reduce_capabilities(void)
 	int ret = 0;
 
 #ifdef CONFIG_ALFRED_CAPABILITIES
+	cap_value_t cap_net_admin = CAP_NET_ADMIN;
+	cap_value_t cap_net_raw = CAP_NET_RAW;
+	cap_flag_value_t cap_flag;
 	cap_t cap_cur;
 	cap_t cap_new;
-	cap_flag_value_t cap_flag;
-	cap_value_t cap_net_raw = CAP_NET_RAW;
-	cap_value_t cap_net_admin = CAP_NET_ADMIN;
 
 	/* get current process capabilities */
 	cap_cur = cap_get_proc();
@@ -149,9 +149,6 @@ out:
 
 static struct globals *alfred_init(int argc, char *argv[])
 {
-	int opt, opt_ind, i, ret;
-	double sync_period = 0.0;
-	struct globals *globals;
 	struct option long_options[] = {
 		{"set-data",		required_argument,	NULL,	's'},
 		{"request",		required_argument,	NULL,	'r'},
@@ -173,6 +170,12 @@ static struct globals *alfred_init(int argc, char *argv[])
 		{"force",		no_argument,		NULL,	'f'},
 		{NULL,			0,			NULL,	0},
 	};
+	double sync_period = 0.0;
+	struct globals *globals;
+	int opt_ind;
+	int opt;
+	int ret;
+	int i;
 
 	ret = reduce_capabilities();
 	if (ret < 0)

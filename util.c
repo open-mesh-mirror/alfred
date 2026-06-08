@@ -35,10 +35,11 @@ int time_diff(struct timespec *tv1, struct timespec *tv2,
 void time_random_seed(void)
 {
 	struct timespec now;
-	uint8_t *c = (uint8_t *)&now;
-	size_t i;
 	unsigned int s = 0;
+	uint8_t *c;
+	size_t i;
 
+	c = (uint8_t *)&now;
 	clock_gettime(CLOCK_REALTIME, &now);
 
 	for (i = 0; i < sizeof(now); i++) {
@@ -83,8 +84,8 @@ static void ipv4_request_mac_resolve(const alfred_addr *addr)
 	const struct sockaddr *sockaddr;
 	struct sockaddr_in inet4;
 	size_t sockaddr_len;
-	int sock;
 	char t = 0;
+	int sock;
 
 	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock < 0)
@@ -104,8 +105,8 @@ static void ipv4_request_mac_resolve(const alfred_addr *addr)
 int ipv4_arp_request(struct interface *interface, const alfred_addr *addr,
 		     struct ether_addr *mac)
 {
-	struct arpreq arpreq;
 	struct sockaddr_in *sin;
+	struct arpreq arpreq;
 	int retries = 1;
 
 	memset(&arpreq, 0, sizeof(arpreq));

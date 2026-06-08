@@ -103,10 +103,12 @@ static int unix_sock_add_data(struct globals *globals,
 			      int client_sock)
 {
 	bool new_entry_created = false;
+	struct interface *interface;
 	struct alfred_data *data;
 	struct dataset *dataset;
-	int len, data_len, ret = -1;
-	struct interface *interface;
+	int data_len;
+	int ret = -1;
+	int len;
 
 	len = ntohs(push->header.length);
 
@@ -201,11 +203,12 @@ err:
 static int unix_sock_req_data_reply(struct globals *globals, int client_sock,
 				    uint16_t id, uint8_t requested_type)
 {
-	int len;
 	struct alfred_push_data_v0 *push;
 	struct hash_it_t *hashit = NULL;
 	uint8_t buf[MAX_PAYLOAD];
-	uint16_t seqno = 0, ret = 0;
+	uint16_t seqno = 0;
+	uint16_t ret = 0;
+	int len;
 
 	/* send some data back through the unix socket */
 
@@ -252,10 +255,10 @@ static int unix_sock_req_data(struct globals *globals,
 			      struct alfred_request_v0 *request,
 			      int client_sock)
 {
-	int len;
-	uint16_t id;
 	struct transaction_head *head = NULL;
 	struct interface *interface;
+	uint16_t id;
+	int len;
 
 	len = ntohs(request->header.length);
 
@@ -293,10 +296,11 @@ int unix_sock_req_data_finish(struct globals *globals,
 			      struct transaction_head *head)
 {
 	struct alfred_status_v0 status;
-	int ret = 0, send_data = 1;
+	uint8_t requested_type;
+	int send_data = 1;
 	int client_sock;
 	uint16_t id;
-	uint8_t requested_type;
+	int ret = 0;
 
 	requested_type = head->requested_type;
 	id = head->id;
@@ -328,7 +332,8 @@ static int unix_sock_modesw(struct globals *globals,
 			    struct alfred_modeswitch_v0 *modeswitch,
 			    int client_sock)
 {
-	int len, ret = -1;
+	int ret = -1;
+	int len;
 
 	len = ntohs(modeswitch->header.length);
 
@@ -360,7 +365,8 @@ unix_sock_change_iface(struct globals *globals,
 		       struct alfred_change_interface_v0 *change_iface,
 		       int client_sock)
 {
-	int len, ret = -1;
+	int ret = -1;
+	int len;
 
 	len = ntohs(change_iface->header.length);
 
@@ -390,7 +396,8 @@ unix_sock_change_bat_iface(struct globals *globals,
 			   struct alfred_change_bat_iface_v0 *change_bat_iface,
 			   int client_sock)
 {
-	int len, ret = -1;
+	int ret = -1;
+	int len;
 
 	len = ntohs(change_bat_iface->header.length);
 
@@ -514,13 +521,15 @@ static void unix_sock_read(struct globals *globals,
 			   struct epoll_handle *handle __unused,
 			   struct epoll_event *ev __unused)
 {
-	int client_sock;
 	struct sockaddr_un sun_addr;
-	socklen_t sun_size = sizeof(sun_addr);
 	struct alfred_tlv *packet;
 	uint8_t buf[MAX_PAYLOAD];
-	int length, headsize;
+	socklen_t sun_size;
+	int client_sock;
+	int headsize;
+	int length;
 
+	sun_size = sizeof(sun_addr);
 	client_sock = accept(globals->unix_sock, (struct sockaddr *)&sun_addr,
 			     &sun_size);
 	if (client_sock < 0) {
@@ -698,7 +707,8 @@ static void unix_sock_event_notify_listener(struct event_listener *listener,
 
 void unix_sock_events_close_all(struct globals *globals)
 {
-	struct event_listener *listener, *tmp;
+	struct event_listener *listener;
+	struct event_listener *tmp;
 
 	list_for_each_entry_safe(listener, tmp,
 				 &globals->event_listeners, list) {
@@ -709,7 +719,8 @@ void unix_sock_events_close_all(struct globals *globals)
 void unix_sock_event_notify(struct globals *globals, uint8_t type,
 			    const uint8_t source[ETH_ALEN])
 {
-	struct event_listener *listener, *tmp;
+	struct event_listener *listener;
+	struct event_listener *tmp;
 
 	/* if event notify is unsuccessful, listener socket is closed */
 	list_for_each_entry_safe(listener, tmp,

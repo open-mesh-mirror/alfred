@@ -27,7 +27,8 @@ void hash_init(struct hashtable_t *hash)
  * if you don't remove the elements, memory might be leaked. */
 void hash_delete(struct hashtable_t *hash, hashdata_free_cb free_cb)
 {
-	struct element_t *bucket, *last_bucket;
+	struct element_t *last_bucket;
+	struct element_t *bucket;
 	int i;
 
 	for (i = 0; i < hash->size; i++) {
@@ -51,8 +52,9 @@ void hash_delete(struct hashtable_t *hash, hashdata_free_cb free_cb)
 static int hash_add_bucket(struct hashtable_t *hash, void *data,
 			   struct element_t *bucket, int check_duplicate)
 {
+	struct element_t *prev_bucket = NULL;
+	struct element_t *bucket_it;
 	int index;
-	struct element_t *bucket_it, *prev_bucket = NULL;
 
 	index = hash->choose(data, hash->size);
 	bucket_it = hash->table[index];
@@ -198,8 +200,8 @@ struct hashtable_t *hash_new(int size, hashdata_compare_cb compare,
 /* adds data to the hashtable. returns 0 on success, -1 on error */
 int hash_add(struct hashtable_t *hash, void *data)
 {
-	int ret;
 	struct element_t *bucket;
+	int ret;
 
 	/* found the tail of the list, add new element */
 	bucket = debugMalloc(sizeof(struct element_t), 304);
@@ -218,8 +220,8 @@ int hash_add(struct hashtable_t *hash, void *data)
  * or NULL on error */
 void *hash_find(struct hashtable_t *hash, void *keydata)
 {
-	int index;
 	struct element_t *bucket;
+	int index;
 
 	index = hash->choose(keydata, hash->size);
 	bucket = hash->table[index];
@@ -316,8 +318,8 @@ struct hashtable_t *hash_resize(struct hashtable_t *hash, int size)
 
 /* print the hash table for debugging */
 /* void hash_debug(struct hashtable_t *hash) {
-	int i;
 	struct element_t *bucket;
+	int i;
 
 	for (i = 0; i < hash->size; i++) {
 		printf("[%d] ", i);
