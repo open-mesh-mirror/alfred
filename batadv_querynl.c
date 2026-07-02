@@ -79,7 +79,7 @@ static int translate_mac_netlink_cb(struct nl_msg *msg, void *arg)
 	tg_hash_add(opts->tg_hash, &mac_addr, &mac_orig);
 	opts->query_opts.err = 0;
 
-	return NL_STOP;
+	return NL_OK;
 }
 
 int translate_mac_netlink(const char *mesh_iface, struct hashtable_t *tg_hash)
