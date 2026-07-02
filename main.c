@@ -191,7 +191,6 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->clientmode = CLIENT_NONE;
 	globals->best_server = NULL;
 	globals->clientmode_version = 0;
-	globals->mesh_iface = "bat0";
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
 	globals->verbose = false;
 	globals->ipv4mode = false;
@@ -200,6 +199,12 @@ static struct globals *alfred_init(int argc, char *argv[])
 	globals->sync_period.tv_sec = ALFRED_INTERVAL;
 	globals->sync_period.tv_nsec = 0;
 	bitmap_zero(globals->changed_data_types, ALFRED_NUM_TYPES);
+
+	globals->mesh_iface = strdup("bat0");
+	if (!globals->mesh_iface) {
+		perror("strdup");
+		return NULL;
+	}
 
 	time_random_seed();
 
