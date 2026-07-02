@@ -164,7 +164,7 @@ struct alfred_change_interface_v0 {
 struct alfred_change_bat_iface_v0 {
 	struct alfred_tlv header;
 	char bat_iface[IFNAMSIZ];
-};
+} __packed;
 
 /**
  * enum alfred_packet_type - Types of packet stored in the main alfred_tlv
