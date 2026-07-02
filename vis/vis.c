@@ -1046,10 +1046,6 @@ static int vis_read_answer(struct globals *globals)
 		vis_entries = (struct vis_entry *) &ifaces[vis_data->iface_n];
 
 		ops->interfaces(vis_data->iface_n, ifaces);
-
-		if (vis_data->entries_n == 0)
-			continue;
-
 		ops->entries(vis_data->entries_n, vis_entries,
 			     vis_data->iface_n, ifaces);
 	}
