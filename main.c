@@ -235,12 +235,6 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'm':
 			globals->opmode = OPMODE_PRIMARY;
 			break;
-		case 'i':
-			globals->net_iface = strdup(optarg);
-			break;
-		case 'b':
-			globals->mesh_iface = strdup(optarg);
-			break;
 		case 'V':
 			i = atoi(optarg);
 			if (i < 0 || i > 255) {
@@ -264,10 +258,16 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case 'I':
 			globals->clientmode = CLIENT_CHANGE_INTERFACE;
+			/* fall-through */
+		case 'i':
+			free(globals->net_iface);
 			globals->net_iface = strdup(optarg);
 			break;
 		case 'B':
 			globals->clientmode = CLIENT_CHANGE_BAT_IFACE;
+			/* fall-through */
+		case 'b':
+			free(globals->mesh_iface);
 			globals->mesh_iface = strdup(optarg);
 			break;
 		case 'S':
