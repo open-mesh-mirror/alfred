@@ -233,7 +233,7 @@ static int check_interface(const char *iface)
 	struct ifreq ifr;
 	int sock = -1;
 
-	if (strlen(iface) > IFNAMSIZ) {
+	if (strlen(iface) >= IFNAMSIZ) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
 		return -1;
@@ -273,7 +273,7 @@ int alfred_client_change_interface(struct globals *globals)
 		return -1;
 
 	interface_len = strlen(globals->net_iface);
-	if (interface_len > sizeof(change_interface.ifaces)) {
+	if (interface_len >= sizeof(change_interface.ifaces)) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
 		return 0;
@@ -322,7 +322,7 @@ int alfred_client_change_bat_iface(struct globals *globals)
 		return -1;
 
 	interface_len = strlen(globals->mesh_iface);
-	if (interface_len > sizeof(change_bat_iface.bat_iface)) {
+	if (interface_len >= sizeof(change_bat_iface.bat_iface)) {
 		fprintf(stderr, "%s: batman-adv interface name list too long, not changing\n",
 			__func__);
 		return 0;
