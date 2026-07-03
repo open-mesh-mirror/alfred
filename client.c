@@ -153,6 +153,17 @@ int alfred_client_set_data(struct globals *globals)
 	len = sizeof(*push) + sizeof(*data);
 	while (!feof(stdin)) {
 		ret = fread(&buf[len], 1, sizeof(buf) - len, stdin);
+		if (ret == 0) {
+			if (ferror(stdin)) {
+				fprintf(stderr, "%s: failed to read data from stdin\n",
+					__func__);
+				unix_sock_close(globals);
+				return -1;
+			}
+
+			break;
+		}
+
 		len += ret;
 
 		if (sizeof(buf) == len)
