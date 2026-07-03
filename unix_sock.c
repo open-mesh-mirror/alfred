@@ -56,12 +56,12 @@ int unix_sock_open_daemon(struct globals *globals)
 	if (bind(globals->unix_sock, (struct sockaddr *)&addr,
 		 sizeof(addr)) < 0) {
 		perror("can't bind unix socket");
-		return -1;
+		goto err;
 	}
 
 	if (listen(globals->unix_sock, 10) < 0) {
 		perror("can't listen on unix socket");
-		return -1;
+		goto err;
 	}
 
 	ev.events = EPOLLIN;
@@ -71,10 +71,15 @@ int unix_sock_open_daemon(struct globals *globals)
 	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, globals->unix_sock,
 		      &ev) == -1) {
 		perror("Failed to add epoll for check_timer");
-		return -1;
+		goto err;
 	}
 
 	return 0;
+
+err:
+	close(globals->unix_sock);
+	globals->unix_sock = -1;
+	return -1;
 }
 
 int unix_sock_open_client(struct globals *globals)
