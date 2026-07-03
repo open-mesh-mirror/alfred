@@ -531,6 +531,7 @@ static int parse_orig_list_netlink_cb(struct nl_msg *msg, void *arg)
 	uint32_t hardif;
 	uint8_t *neigh;
 	uint8_t *orig;
+	int ifindex;
 	uint8_t tq;
 
 	opts = container_of(query_opts, struct vis_netlink_opts,
@@ -567,12 +568,16 @@ static int parse_orig_list_netlink_cb(struct nl_msg *msg, void *arg)
 	if (memcmp(orig, neigh, ETH_ALEN) != 0)
 		return NL_OK;
 
+	ifindex = get_if_index_devindex(opts->globals, hardif);
+	if (ifindex < 0 || ifindex >= 255)
+		return NL_OK;
+
 	v_entry = malloc(sizeof(*v_entry));
 	if (!v_entry)
 		return NL_OK;
 
 	memcpy(v_entry->v.mac, orig, ETH_ALEN);
-	v_entry->v.ifindex = get_if_index_devindex(opts->globals, hardif);
+	v_entry->v.ifindex = ifindex;
 	v_entry->v.qual = tq;
 	list_add_tail(&v_entry->list, &opts->globals->entry_list);
 
