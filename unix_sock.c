@@ -35,6 +35,11 @@ int unix_sock_open_daemon(struct globals *globals)
 	struct sockaddr_un addr;
 	struct epoll_event ev;
 
+	if (strlen(globals->unix_path) >= sizeof(addr.sun_path)) {
+		fprintf(stderr, "unix socket path too long\n");
+		return -1;
+	}
+
 	unlink(globals->unix_path);
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
@@ -75,6 +80,11 @@ int unix_sock_open_daemon(struct globals *globals)
 int unix_sock_open_client(struct globals *globals)
 {
 	struct sockaddr_un addr;
+
+	if (strlen(globals->unix_path) >= sizeof(addr.sun_path)) {
+		fprintf(stderr, "unix socket path too long\n");
+		return -1;
+	}
 
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
