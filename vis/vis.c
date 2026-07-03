@@ -718,7 +718,8 @@ static ssize_t read_full(int fd, void *buf, size_t count)
 	return read_len;
 }
 
-static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len)
+static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len,
+						int *error)
 {
 	struct alfred_push_data_v0 *push;
 	static uint8_t buf[65536];
@@ -727,15 +728,29 @@ static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len)
 	int ret;
 	int l;
 
+	*error = -1;
+
 	ret = read_full(sock, buf, sizeof(*tlv));
-	if (ret < 0)
+	if (ret < 0) {
+		perror("read from unix socket failed");
 		return NULL;
+	}
+
+	/* end of the answer */
+	if (ret == 0) {
+		*error = 0;
+		return NULL;
+	}
 
 	if (ret < (int)sizeof(*tlv))
 		return NULL;
 
 	tlv = (struct alfred_tlv *)buf;
-	/* TODO: might return an ALFRED_STATUS_ERROR too, handle it */
+	if (tlv->type == ALFRED_STATUS_ERROR) {
+		fprintf(stderr, "Request of vis data failed\n");
+		return NULL;
+	}
+
 	if (tlv->type != ALFRED_PUSH_DATA)
 		return NULL;
 
@@ -762,6 +777,8 @@ static struct vis_v1 *vis_receive_answer_packet(int sock, uint16_t *len)
 
 	if (data->header.version != VIS_PACKETVERSION)
 		return NULL;
+
+	*error = 0;
 
 	return (struct vis_v1 *) data->data;
 }
@@ -995,6 +1012,7 @@ static int vis_read_answer(struct globals *globals)
 	struct vis_iface *ifaces;
 	struct vis_v1 *vis_data;
 	uint16_t len;
+	int ret = 0;
 
 	switch (globals->vis_format) {
 	case FORMAT_DOT:
@@ -1013,7 +1031,7 @@ static int vis_read_answer(struct globals *globals)
 	ops->preamble();
 
 	while ((vis_data =
-		vis_receive_answer_packet(globals->unix_sock, &len)) != NULL) {
+		vis_receive_answer_packet(globals->unix_sock, &len, &ret)) != NULL) {
 		if (len < sizeof(*vis_data))
 			return -1;
 
@@ -1037,19 +1055,21 @@ static int vis_read_answer(struct globals *globals)
 	}
 	ops->postamble();
 
-	return 0;
+	return ret;
 }
 
 static int vis_get_data(struct globals *globals)
 {
+	int ret;
+
 	globals->unix_sock = vis_request_data(globals);
 	if (globals->unix_sock < 0)
 		return -1;
 
-	vis_read_answer(globals);
+	ret = vis_read_answer(globals);
 	close(globals->unix_sock);
 
-	return 0;
+	return ret;
 }
 
 static void vis_usage(void)
@@ -1176,8 +1196,10 @@ int main(int argc, char *argv[])
 		return vis_server(globals);
 		break;
 	case OPMODE_CLIENT:
-		return vis_get_data(globals);
-		break;
+		if (vis_get_data(globals) < 0)
+			return 1;
+
+		return 0;
 	}
 
 	return 0;
