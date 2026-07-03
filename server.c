@@ -440,7 +440,7 @@ static int create_sync_period_timer(struct globals *globals)
 	ret = timerfd_settime(globals->check_timerfd, 0, &sync_timer, NULL);
 	if (ret < 0) {
 		perror("Failed to arm synchronization timer");
-		return -1;
+		goto err;
 	}
 
 	ev.events = EPOLLIN;
@@ -450,10 +450,15 @@ static int create_sync_period_timer(struct globals *globals)
 	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, globals->check_timerfd,
 		      &ev) == -1) {
 		perror("Failed to add epoll for check_timer");
-		return -1;
+		goto err;
 	}
 
 	return 0;
+
+err:
+	close(globals->check_timerfd);
+	globals->check_timerfd = -1;
+	return -1;
 }
 
 int alfred_server(struct globals *globals)
