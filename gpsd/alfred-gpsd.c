@@ -139,6 +139,30 @@ static int gpsd_request_data(struct globals *globals)
 	return globals->unix_sock;
 }
 
+static ssize_t read_full(int fd, void *buf, size_t count)
+{
+	size_t read_len = 0;
+	uint8_t *pos = buf;
+	ssize_t ret;
+
+	while (read_len < count) {
+		ret = read(fd, pos + read_len, count - read_len);
+		if (ret < 0) {
+			if (errno == EINTR)
+				continue;
+
+			return ret;
+		}
+
+		if (ret == 0)
+			break;
+
+		read_len += ret;
+	}
+
+	return read_len;
+}
+
 static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 						  uint8_t *source)
 {
@@ -149,7 +173,7 @@ static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 	int ret;
 	int l;
 
-	ret = read(sock, buf, sizeof(*tlv));
+	ret = read_full(sock, buf, sizeof(*tlv));
 	if (ret < 0)
 		return NULL;
 
@@ -171,7 +195,7 @@ static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 		return NULL;
 
 	/* read the rest of the packet */
-	ret = read(sock, buf + sizeof(*tlv), l);
+	ret = read_full(sock, buf + sizeof(*tlv), l);
 	if (ret < l)
 		return NULL;
 
