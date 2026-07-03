@@ -419,10 +419,13 @@ unix_sock_change_iface(struct globals *globals,
 	if (!net_iface)
 		goto err;
 
+	if (netsock_set_interfaces(globals, change_iface->ifaces) < 0) {
+		free(net_iface);
+		goto err;
+	}
+
 	free(globals->net_iface);
 	globals->net_iface = net_iface;
-
-	netsock_set_interfaces(globals, change_iface->ifaces);
 
 	ret = 0;
 err:

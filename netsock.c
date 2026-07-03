@@ -100,12 +100,12 @@ struct interface *netsock_first_interface(struct globals *globals)
 	return NULL;
 }
 
-static struct interface *netsock_find_interface(struct globals *globals,
+static struct interface *netsock_find_interface(struct list_head *interfaces,
 						const char *name)
 {
 	struct interface *interface;
 
-	list_for_each_entry(interface, &globals->interfaces, list) {
+	list_for_each_entry(interface, interfaces, list) {
 		if (strcmp(name, interface->interface) == 0)
 			return interface;
 	}
@@ -115,30 +115,32 @@ static struct interface *netsock_find_interface(struct globals *globals,
 
 int netsock_set_interfaces(struct globals *globals, char *interfaces)
 {
+	struct list_head new_interfaces;
 	struct interface *interface;
+	struct interface *is;
 	char *saveptr;
 	char *input;
 	char *token;
 
-	netsock_close_all(globals);
+	INIT_LIST_HEAD(&new_interfaces);
 
 	/* interface 'none' disables all interface operations */
-	if (is_iface_disabled(interfaces))
+	if (is_iface_disabled(interfaces)) {
+		netsock_close_all(globals);
 		return 0;
+	}
 
 	input = interfaces;
 	while ((token = strtok_r(input, ",", &saveptr))) {
 		input = NULL;
 
-		interface = netsock_find_interface(globals, token);
+		interface = netsock_find_interface(&new_interfaces, token);
 		if (interface)
 			continue;
 
 		interface = malloc(sizeof(*interface));
-		if (!interface) {
-			netsock_close_all(globals);
-			return -ENOMEM;
-		}
+		if (!interface)
+			goto err;
 
 		memset(&interface->hwaddr, 0, sizeof(interface->hwaddr));
 		memset(&interface->address, 0, sizeof(interface->address));
@@ -151,8 +153,7 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 		interface->interface = strdup(token);
 		if (!interface->interface) {
 			free(interface);
-			netsock_close_all(globals);
-			return -ENOMEM;
+			goto err;
 		}
 
 		interface->server_hash = hash_new(64, server_compare,
@@ -160,14 +161,26 @@ int netsock_set_interfaces(struct globals *globals, char *interfaces)
 		if (!interface->server_hash) {
 			free(interface->interface);
 			free(interface);
-			netsock_close_all(globals);
-			return -ENOMEM;
+			goto err;
 		}
 
-		list_add_tail(&interface->list, &globals->interfaces);
+		list_add_tail(&interface->list, &new_interfaces);
 	}
 
+	netsock_close_all(globals);
+	list_splice_tail(&new_interfaces, &globals->interfaces);
+
 	return 0;
+
+err:
+	list_for_each_entry_safe(interface, is, &new_interfaces, list) {
+		list_del(&interface->list);
+		hash_delete(interface->server_hash, free);
+		free(interface->interface);
+		free(interface);
+	}
+
+	return -ENOMEM;
 }
 
 static int enable_raw_bind_capability(int enable)
