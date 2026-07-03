@@ -317,14 +317,14 @@ static int netsock_open(struct globals *globals, struct interface *interface)
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
 		       strlen(interface->interface) + 1)) {
 		perror("can't bind to device");
-		goto err;
+		goto err_bind;
 	}
 
 	if (setsockopt(sock_mc, SOL_SOCKET, SO_BINDTODEVICE,
 		       interface->interface,
 		       strlen(interface->interface) + 1)) {
 		perror("can't bind to device");
-		goto err;
+		goto err_bind;
 	}
 	enable_raw_bind_capability(0);
 
@@ -408,6 +408,9 @@ static int netsock_open(struct globals *globals, struct interface *interface)
 	interface->netsock_mcast = sock_mc;
 
 	return 0;
+
+err_bind:
+	enable_raw_bind_capability(0);
 err:
 	close(sock);
 	close(sock_mc);
@@ -464,13 +467,13 @@ static int netsock_open4(struct globals *globals, struct interface *interface)
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface->interface,
 		       strlen(interface->interface) + 1)) {
 		perror("ipv4: can't bind to device");
-		goto err;
+		goto err_bind;
 	}
 
 	if (setsockopt(sock_mc, SOL_SOCKET, SO_BINDTODEVICE,
 		       interface->interface, strlen(interface->interface) + 1)) {
 		perror("ipv4: can't bind to device");
-		goto err;
+		goto err_bind;
 	}
 	enable_raw_bind_capability(0);
 
@@ -558,6 +561,9 @@ static int netsock_open4(struct globals *globals, struct interface *interface)
 	interface->netsock_mcast = sock_mc;
 
 	return 0;
+
+err_bind:
+	enable_raw_bind_capability(0);
 err:
 	close(sock);
 	close(sock_mc);
