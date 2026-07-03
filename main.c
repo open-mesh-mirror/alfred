@@ -84,7 +84,7 @@ static int reduce_capabilities(void)
 	cap_new = cap_init();
 	if (!cap_new) {
 		perror("cap_init");
-		cap_free(cap_new);
+		cap_free(cap_cur);
 		return -1;
 	}
 
