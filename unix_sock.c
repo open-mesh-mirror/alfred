@@ -396,6 +396,7 @@ unix_sock_change_iface(struct globals *globals,
 		       struct alfred_change_interface_v0 *change_iface,
 		       int client_sock)
 {
+	char *net_iface;
 	int ret = -1;
 	int len;
 
@@ -413,6 +414,13 @@ unix_sock_change_iface(struct globals *globals,
 			goto err;
 		}
 	}
+
+	net_iface = strdup(change_iface->ifaces);
+	if (!net_iface)
+		goto err;
+
+	free(globals->net_iface);
+	globals->net_iface = net_iface;
 
 	netsock_set_interfaces(globals, change_iface->ifaces);
 
