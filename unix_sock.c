@@ -286,7 +286,7 @@ static int unix_sock_req_data(struct globals *globals,
 	len = ntohs(request->header.length);
 
 	if (len != (sizeof(*request) - sizeof(request->header)))
-		return -1;
+		goto err;
 
 	id = ntohs(request->tx_id);
 
@@ -304,7 +304,7 @@ static int unix_sock_req_data(struct globals *globals,
 
 	head = transaction_add(globals, globals->best_server->hwaddr, id);
 	if (!head)
-		return -1;
+		goto err;
 
 	head->client_socket = client_sock;
 	head->requested_type = request->requested_type;
@@ -313,6 +313,9 @@ static int unix_sock_req_data(struct globals *globals,
 			   request, sizeof(*request));
 
 	return 0;
+err:
+	close(client_sock);
+	return -1;
 }
 
 int unix_sock_req_data_finish(struct globals *globals,
