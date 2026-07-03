@@ -314,35 +314,41 @@ static void gpsd_read_gpsd(struct globals *globals)
 				sizeof(struct alfred_data) -
 				sizeof(*globals->gpsd_data);
 	bool eol = false;
+	size_t received;
 	char buf[4096];
 	ssize_t ret;
 	size_t cnt;
+	char c;
 
 	cnt = 0;
-	do {
-		ret = read(globals->gpsdata.gps_fd, &buf[cnt], 1);
+	for (received = 0; received < sizeof(buf) - 1 && !eol; received++) {
+		ret = read(globals->gpsdata.gps_fd, &c, 1);
 		if (ret != 1) {
 			gps_close(&globals->gpsdata);
 			globals->gpsdata.gps_fd = -1;
 			return;
 		}
 
-		switch (buf[cnt]) {
+		switch (c) {
 		case '\r':
-			cnt--;
+			/* strip carriage returns */
 			break;
 		case '\n':
 			eol = true;
-			buf[cnt] = '\0';
+			break;
+		default:
+			buf[cnt++] = c;
 			break;
 		}
-	} while (cnt++ < sizeof(buf) - 1 && !eol);
+	}
 
 	if (!eol) {
 		gps_close(&globals->gpsdata);
 		globals->gpsdata.gps_fd = -1;
 		return;
 	}
+
+	buf[cnt] = '\0';
 
 #define STARTSWITH(str, prefix)	strncmp(str, prefix, sizeof(prefix)-1)==0
 	if (STARTSWITH(buf, "{\"class\":\"TPV\"")) {
