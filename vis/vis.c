@@ -1033,7 +1033,7 @@ static int vis_read_answer(struct globals *globals)
 	while ((vis_data =
 		vis_receive_answer_packet(globals->unix_sock, &len, &ret)) != NULL) {
 		if (len < sizeof(*vis_data))
-			return -1;
+			continue;
 
 		/* check size and skip bogus packets */
 		if (len != VIS_DATA_SIZE(vis_data))
