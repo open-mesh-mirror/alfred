@@ -364,7 +364,7 @@ static void execute_update_command(struct globals *globals)
 	script_pid = fork();
 	if (script_pid == 0) {
 		system(command);
-		exit(0);
+		_exit(0);
 	}
 
 	free(command);
