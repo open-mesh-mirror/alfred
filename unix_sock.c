@@ -435,6 +435,7 @@ unix_sock_change_bat_iface(struct globals *globals,
 			   struct alfred_change_bat_iface_v0 *change_bat_iface,
 			   int client_sock)
 {
+	char *mesh_iface;
 	int ret = -1;
 	int len;
 
@@ -443,9 +444,13 @@ unix_sock_change_bat_iface(struct globals *globals,
 	if (len < (int)(sizeof(*change_bat_iface) - sizeof(change_bat_iface->header)))
 		goto err;
 
-	free(globals->mesh_iface);
 	change_bat_iface->bat_iface[sizeof(change_bat_iface->bat_iface) - 1] = '\0';
-	globals->mesh_iface = strdup(change_bat_iface->bat_iface);
+	mesh_iface = strdup(change_bat_iface->bat_iface);
+	if (!mesh_iface)
+		goto err;
+
+	free(globals->mesh_iface);
+	globals->mesh_iface = mesh_iface;
 
 	ret = 0;
 err:
