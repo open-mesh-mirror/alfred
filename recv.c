@@ -403,7 +403,7 @@ int recv_alfred_packet(struct globals *globals, struct interface *interface,
 
 	length = recvfrom(recv_sock, buf, sizeof(buf), 0,
 			  (struct sockaddr *)source, &sourcelen);
-	if (length <= 0) {
+	if (length < 0) {
 		perror("read from network socket failed");
 		return -1;
 	}
