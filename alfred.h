@@ -224,6 +224,7 @@ void netsock_reopen(struct globals *globals);
 int netsock_own_address(const struct globals *globals,
 			const alfred_addr *address);
 /* util.c */
+ssize_t read_full(int fd, void *buf, size_t count);
 int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff);
 void time_random_seed(void);

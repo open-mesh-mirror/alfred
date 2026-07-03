@@ -53,7 +53,7 @@ int alfred_client_request_data(struct globals *globals)
 
 	push = (struct alfred_push_data_v0 *)buf;
 	tlv = (struct alfred_tlv *)buf;
-	while ((ret = read(globals->unix_sock, buf, sizeof(*tlv))) > 0) {
+	while ((ret = read_full(globals->unix_sock, buf, sizeof(*tlv))) > 0) {
 		if (ret < (int)sizeof(*tlv))
 			break;
 
@@ -64,16 +64,16 @@ int alfred_client_request_data(struct globals *globals)
 			break;
 
 		/* read the rest of the header */
-		ret = read(globals->unix_sock, buf + sizeof(*tlv),
-			   sizeof(*push) - sizeof(*tlv));
+		ret = read_full(globals->unix_sock, buf + sizeof(*tlv),
+				sizeof(*push) - sizeof(*tlv));
 
 		/* too short */
 		if (ret < (int)(sizeof(*push) - (int)sizeof(*tlv)))
 			break;
 
 		/* read the rest of the header */
-		ret = read(globals->unix_sock, buf + sizeof(*push),
-			   sizeof(*data));
+		ret = read_full(globals->unix_sock, buf + sizeof(*push),
+				sizeof(*data));
 
 		if (ret < (ssize_t)sizeof(*data))
 			break;
@@ -86,8 +86,8 @@ int alfred_client_request_data(struct globals *globals)
 			break;
 
 		/* read the data */
-		ret = read(globals->unix_sock,
-			   buf + sizeof(*push) + sizeof(*data), data_len);
+		ret = read_full(globals->unix_sock,
+				buf + sizeof(*push) + sizeof(*data), data_len);
 
 		/* again too short */
 		if (ret < data_len)
@@ -124,8 +124,8 @@ int alfred_client_request_data(struct globals *globals)
 
 recv_err:
 	/* read the rest of the status message */
-	ret = read(globals->unix_sock, buf + sizeof(*tlv),
-		   sizeof(*status) - sizeof(*tlv));
+	ret = read_full(globals->unix_sock, buf + sizeof(*tlv),
+			sizeof(*status) - sizeof(*tlv));
 
 	/* too short */
 	if (ret < (int)(sizeof(*status) - sizeof(*tlv)))
@@ -377,42 +377,49 @@ int alfred_client_server_status(struct globals *globals)
 		fprintf(stderr, "%s: only wrote %d of %d bytes: %s\n",
 			__func__, ret, len, strerror(errno));
 
-	len = read(globals->unix_sock, buf, sizeof(buf));
-	if (len <= 0) {
+	ret = -1;
+	status_rep = (struct alfred_server_status_rep_v0 *)buf;
+	headsize = sizeof(status_rep->header);
+
+	/* drop too small packets */
+	len = read_full(globals->unix_sock, buf, headsize);
+	if (len < 0) {
 		perror("read from unix socket failed");
 		goto err;
 	}
 
-	ret = -1;
-	status_rep = (struct alfred_server_status_rep_v0 *)buf;
-
-	/* drop too small packets */
-	headsize = sizeof(status_rep->header);
 	if (len < headsize) {
-		perror("unexpected header size received from unix socket");
-		goto err;
-	}
-
-	if ((len - headsize) < ((int)ntohs(status_rep->header.length))) {
-		perror("unexpected packet size received from unix socket");
+		fprintf(stderr, "unexpected header size received from unix socket\n");
 		goto err;
 	}
 
 	if (status_rep->header.type != ALFRED_SERVER_STATUS) {
-		perror("alfred server_status type mismatch");
+		fprintf(stderr, "alfred server_status type mismatch\n");
 		goto err;
 	}
 
 	if (status_rep->header.version != ALFRED_VERSION) {
-		perror("alfred version mismatch");
+		fprintf(stderr, "alfred version mismatch\n");
 		goto err;
 	}
 
-	headsize = ntohs(status_rep->header.length);
+	tlvsize = ntohs(status_rep->header.length);
 
-	if (headsize < (int)(sizeof(*status_rep) - sizeof(status_rep->header)))
+	if (tlvsize < (int)(sizeof(*status_rep) - sizeof(status_rep->header)))
 		goto err;
 
+	if (tlvsize > (int)(sizeof(buf) - headsize)) {
+		fprintf(stderr, "unexpected packet size received from unix socket\n");
+		goto err;
+	}
+
+	/* read the announced rest of the reply */
+	if (read_full(globals->unix_sock, buf + headsize, tlvsize) < tlvsize) {
+		fprintf(stderr, "unexpected packet size received from unix socket\n");
+		goto err;
+	}
+
+	len = headsize + tlvsize;
 	consumed = sizeof(*status_rep);
 
 	while (len - consumed > 0) {
@@ -473,9 +480,11 @@ int alfred_client_server_status(struct globals *globals)
 		consumed += tlvsize;
 	}
 
+	ret = 0;
+
 err:
 	unix_sock_close(globals);
-	return 0;
+	return ret;
 }
 
 int alfred_client_event_monitor(struct globals *globals)
@@ -502,7 +511,8 @@ int alfred_client_event_monitor(struct globals *globals)
 	}
 
 	while (true) {
-		len = read(globals->unix_sock, &event_notify, sizeof(event_notify));
+		len = read_full(globals->unix_sock, &event_notify,
+				sizeof(event_notify));
 		if (len == 0) {
 			fprintf(stdout, "Server closed the connection\n");
 			goto err;

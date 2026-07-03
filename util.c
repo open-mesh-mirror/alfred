@@ -6,6 +6,7 @@
  * License-Filename: LICENSES/preferred/GPL-2.0
  */
 
+#include <errno.h>
 #include <netinet/ether.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -18,6 +19,30 @@
 #include <time.h>
 #include <unistd.h>
 #include "alfred.h"
+
+ssize_t read_full(int fd, void *buf, size_t count)
+{
+	size_t read_len = 0;
+	uint8_t *pos = buf;
+	ssize_t ret;
+
+	while (read_len < count) {
+		ret = read(fd, pos + read_len, count - read_len);
+		if (ret < 0) {
+			if (errno == EINTR)
+				continue;
+
+			return ret;
+		}
+
+		if (ret == 0)
+			break;
+
+		read_len += ret;
+	}
+
+	return read_len;
+}
 
 int time_diff(struct timespec *tv1, struct timespec *tv2,
 	      struct timespec *tvdiff) {

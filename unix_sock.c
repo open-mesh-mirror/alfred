@@ -568,24 +568,24 @@ static void unix_sock_read(struct globals *globals,
 		return;
 	}
 
-	/* we assume that we can instantly read here. */
-	length = read(client_sock, buf, sizeof(buf));
-	if (length <= 0) {
+	headsize = sizeof(*packet);
+	packet = (struct alfred_tlv *)buf;
+
+	/* drop too small packets */
+	if (read_full(client_sock, buf, headsize) < headsize) {
 		perror("read from unix socket failed");
 		goto err;
 	}
 
-	/* drop too small packets */
-	headsize = sizeof(*packet);
-	if (length < headsize)
-		goto err;
-
-	packet = (struct alfred_tlv *)buf;
-
-	if ((length - headsize) < ((int)ntohs(packet->length)))
-		goto err;
-
 	if (packet->version != ALFRED_VERSION)
+		goto err;
+
+	length = ntohs(packet->length);
+	if (length > (int)(sizeof(buf) - headsize))
+		goto err;
+
+	/* read the announced rest of the request */
+	if (read_full(client_sock, buf + headsize, length) < length)
 		goto err;
 
 	switch (packet->type) {
