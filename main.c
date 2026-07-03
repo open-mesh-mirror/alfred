@@ -262,6 +262,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'i':
 			free(globals->net_iface);
 			globals->net_iface = strdup(optarg);
+			if (!globals->net_iface) {
+				perror("strdup");
+				return NULL;
+			}
 			break;
 		case 'B':
 			globals->clientmode = CLIENT_CHANGE_BAT_IFACE;
@@ -269,6 +273,10 @@ static struct globals *alfred_init(int argc, char *argv[])
 		case 'b':
 			free(globals->mesh_iface);
 			globals->mesh_iface = strdup(optarg);
+			if (!globals->mesh_iface) {
+				perror("strdup");
+				return NULL;
+			}
 			break;
 		case 'S':
 			globals->clientmode = CLIENT_SERVER_STATUS;
