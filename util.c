@@ -47,7 +47,7 @@ void time_random_seed(void)
 		s += c[i];
 	}
 
-	srand(s);
+	srandom(s);
 }
 
 uint16_t get_random_id(void)
