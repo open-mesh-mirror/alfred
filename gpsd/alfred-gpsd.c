@@ -234,6 +234,7 @@ static int gpsd_read_answer(struct globals *globals)
 	struct gpsd_v1 *gpsd_data;
 	uint8_t source[ETH_ALEN];
 	bool first_line = true;
+	uint32_t tpv_len;
 	uint16_t len;
 	int ret = 0;
 
@@ -248,16 +249,20 @@ static int gpsd_read_answer(struct globals *globals)
 		if (len != GPSD_DATA_SIZE(gpsd_data))
 			continue;
 
+		tpv_len = ntohl(gpsd_data->tpv_len);
+		if (tpv_len == 0)
+			continue;
+
 		if (first_line)
 			first_line = false;
 		else
 			printf(",\n");
 
 		printf("  { \"source\" : \"%02x:%02x:%02x:%02x:%02x:%02x\", "
-		       "\"tpv\" : %s }",
+		       "\"tpv\" : %.*s }",
 		       source[0], source[1], source[2],
 		       source[3], source[4], source[5],
-		       gpsd_data->tpv);
+		       tpv_len, gpsd_data->tpv);
 	}
 	printf("\n]\n");
 
