@@ -16,6 +16,12 @@ static int alfred_open_sock(struct globals *globals)
 {
 	struct sockaddr_un addr;
 
+	if (strlen(globals->unix_path) >= sizeof(addr.sun_path)) {
+		fprintf(stderr, "unix socket path too long\n");
+		globals->unix_sock = -1;
+		return -1;
+	}
+
 	globals->unix_sock = socket(AF_LOCAL, SOCK_STREAM, 0);
 	if (globals->unix_sock < 0) {
 		perror("can't create unix socket");
