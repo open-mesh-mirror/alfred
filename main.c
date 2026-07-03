@@ -7,7 +7,10 @@
  */
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <getopt.h>
+#include <limits.h>
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -172,6 +175,7 @@ static struct globals *alfred_init(int argc, char *argv[])
 	};
 	double sync_period = 0.0;
 	struct globals *globals;
+	char *endptr;
 	int opt_ind;
 	int opt;
 	int ret;
@@ -298,9 +302,28 @@ static struct globals *alfred_init(int argc, char *argv[])
 			printf("A.L.F.R.E.D. - Almighty Lightweight Remote Fact Exchange Daemon\n");
 			return NULL;
 		case 'p':
-			sync_period = strtod(optarg, NULL);
+			errno = 0;
+			sync_period = strtod(optarg, &endptr);
+			if (errno || *endptr != '\0' || endptr == optarg ||
+			    !isfinite(sync_period) || sync_period <= 0 ||
+			    sync_period > (double)INT_MAX) {
+				fprintf(stderr, "bad sync period argument\n");
+				return NULL;
+			}
+
 			globals->sync_period.tv_sec = (int)sync_period;
 			globals->sync_period.tv_nsec = (double)(sync_period - (int)sync_period) * 1e9;
+
+			/* a period which rounds down to an all zero timespec
+			 * would disarm the timer in timerfd_settime() instead
+			 * of triggering it
+			 */
+			if (globals->sync_period.tv_sec == 0 &&
+			    globals->sync_period.tv_nsec == 0) {
+				fprintf(stderr, "sync period argument too small\n");
+				return NULL;
+			}
+
 			printf(" ** Setting sync interval to: %.9f seconds (%lld.%09u)\n", sync_period,
 			       (long long)globals->sync_period.tv_sec,
 			       (unsigned int)globals->sync_period.tv_nsec);
