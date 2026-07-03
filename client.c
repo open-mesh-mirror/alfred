@@ -276,7 +276,8 @@ int alfred_client_change_interface(struct globals *globals)
 	if (interface_len >= sizeof(change_interface.ifaces)) {
 		fprintf(stderr, "%s: interface name list too long, not changing\n",
 			__func__);
-		return 0;
+		unix_sock_close(globals);
+		return -1;
 	}
 
 	len = sizeof(change_interface);
@@ -297,8 +298,10 @@ int alfred_client_change_interface(struct globals *globals)
 		input = NULL;
 
 		ret = check_interface(token);
-		if (ret < 0)
-			return 0;
+		if (ret < 0) {
+			unix_sock_close(globals);
+			return -1;
+		}
 	}
 
 	ret = write(globals->unix_sock, &change_interface, len);
@@ -325,7 +328,8 @@ int alfred_client_change_bat_iface(struct globals *globals)
 	if (interface_len >= sizeof(change_bat_iface.bat_iface)) {
 		fprintf(stderr, "%s: batman-adv interface name list too long, not changing\n",
 			__func__);
-		return 0;
+		unix_sock_close(globals);
+		return -1;
 	}
 
 	len = sizeof(change_bat_iface);
