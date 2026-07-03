@@ -330,7 +330,11 @@ static struct globals *alfred_init(int argc, char *argv[])
 			break;
 		case '4':
 			globals->ipv4mode = true;
-			inet_pton(AF_INET, optarg, &alfred_mcast.ipv4);
+			ret = inet_pton(AF_INET, optarg, &alfred_mcast.ipv4);
+			if (ret != 1) {
+				fprintf(stderr, "bad IPv4 multicast group argument\n");
+				return NULL;
+			}
 			printf(" ** IPv4 Multicast Mode: %x\n", alfred_mcast.ipv4.s_addr);
 			break;
 		case 'f':
