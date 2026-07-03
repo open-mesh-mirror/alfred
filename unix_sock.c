@@ -230,7 +230,7 @@ static int unix_sock_req_data_reply(struct globals *globals, int client_sock,
 	struct hash_it_t *hashit = NULL;
 	uint8_t buf[MAX_PAYLOAD];
 	uint16_t seqno = 0;
-	uint16_t ret = 0;
+	int ret = 0;
 	int len;
 
 	/* send some data back through the unix socket */
