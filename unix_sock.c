@@ -696,6 +696,7 @@ static int unix_sock_register_listener(struct globals *globals, int client_sock)
 	if (epoll_ctl(globals->epollfd, EPOLL_CTL_ADD, client_sock,
 		      &ev) == -1) {
 		perror("Failed to add epoll for event listener");
+		free(listener);
 		goto err;
 	}
 
