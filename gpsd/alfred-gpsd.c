@@ -354,6 +354,7 @@ static void gpsd_usage(void)
 	printf("  -s, --server                start up in server mode, which regularly updates gpsd data from batman-adv\n");
 	printf("  -l <lat>,<lon>,<alt>        Static location\n");
 	printf("  -g server[:port[:device]]   GPSD source\n");
+	printf("  -u, --unix-path <path>      path to unix socket used for alfred server communication (default: \""ALFRED_SOCK_PATH_DEFAULT"\")\n");
 	printf("  -v, --version               print the version\n");
 	printf("  -h, --help                  this help\n");
 	printf("\n");
