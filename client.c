@@ -292,15 +292,20 @@ int alfred_client_change_interface(struct globals *globals)
 	/* test it before sending
 	 * globals->net_iface is now saved in change_interface.ifaces
 	 * and can be modified by strtok_r
+	 *
+	 * the interface 'none' disables all interface operations and is not
+	 * an interface which could be looked up
 	 */
-	input = globals->net_iface;
-	while ((token = strtok_r(input, ",", &saveptr))) {
-		input = NULL;
+	if (!is_iface_disabled(globals->net_iface)) {
+		input = globals->net_iface;
+		while ((token = strtok_r(input, ",", &saveptr))) {
+			input = NULL;
 
-		ret = check_interface(token);
-		if (ret < 0) {
-			unix_sock_close(globals);
-			return -1;
+			ret = check_interface(token);
+			if (ret < 0) {
+				unix_sock_close(globals);
+				return -1;
+			}
 		}
 	}
 
