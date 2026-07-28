@@ -1058,9 +1058,14 @@ static struct globals *vis_init(int argc, char *argv[])
 	memset(globals, 0, sizeof(*globals));
 
 	globals->opmode = OPMODE_CLIENT;
-	globals->interface = "bat0";
 	globals->vis_format = FORMAT_DOT;
 	globals->unix_path = ALFRED_SOCK_PATH_DEFAULT;
+
+	globals->interface = strdup("bat0");
+	if (!globals->interface) {
+		perror("strdup");
+		return NULL;
+	}
 
 	while ((opt = getopt_long(argc, argv, "shf:i:vu:", long_options,
 				  &opt_ind)) != -1) {
@@ -1081,7 +1086,12 @@ static struct globals *vis_init(int argc, char *argv[])
 			}
 			break;
 		case 'i':
+			free(globals->interface);
 			globals->interface = strdup(optarg);
+			if (!globals->interface) {
+				perror("strdup");
+				return NULL;
+			}
 			break;
 		case 'u':
 			globals->unix_path = optarg;
