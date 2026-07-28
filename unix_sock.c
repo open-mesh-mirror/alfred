@@ -106,8 +106,10 @@ static int unix_sock_add_data(struct globals *globals,
 	struct interface *interface;
 	struct alfred_data *data;
 	struct dataset *dataset;
+	unsigned char *buf;
 	int data_len;
 	int ret = -1;
+	bool changed;
 	int len;
 
 	len = ntohs(push->header.length);
@@ -166,33 +168,44 @@ static int unix_sock_add_data(struct globals *globals,
 		dataset->buf = NULL;
 
 		memcpy(&dataset->data, data, sizeof(*data));
-		if (hash_add(globals->data_hash, dataset)) {
-			free(dataset);
-			goto err;
-		}
 		new_entry_created = true;
 	}
 	dataset->data_source = SOURCE_LOCAL;
 	clock_gettime(CLOCK_MONOTONIC, &dataset->last_seen);
 
 	/* check that data was changed */
-	if (new_entry_created ||
-	    dataset->data.header.length != data_len ||
-	    memcmp(dataset->buf, data->data, data_len) != 0)
-		unix_sock_event_notify(globals, data->header.type,
-				       data->source);
+	changed = new_entry_created ||
+		  dataset->data.header.length != data_len ||
+		  !dataset->buf ||
+		  memcmp(dataset->buf, data->data, data_len) != 0;
 
-	/* free old buffer */
-	free(dataset->buf);
-
-	dataset->buf = malloc(data_len);
-	/* that's not good */
-	if (!dataset->buf)
+	buf = malloc(data_len);
+	if (!buf)
 		goto err;
 
+	/* free old buffer */
+	if (dataset->buf) {
+		free(dataset->buf);
+		dataset->data.header.length = 0;
+	}
+
+	if (new_entry_created) {
+		if (hash_add(globals->data_hash, dataset)) {
+			free(buf);
+			free(dataset);
+			goto err;
+		}
+	}
+
+	dataset->buf = buf;
 	dataset->data.header.length = data_len;
 	dataset->data.header.version = data->header.version;
 	memcpy(dataset->buf, data->data, data_len);
+
+	/* only announce the new data once it is actually stored */
+	if (changed)
+		unix_sock_event_notify(globals, data->header.type,
+				       data->source);
 
 	ret = 0;
 err:

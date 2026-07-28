@@ -32,8 +32,10 @@ static int finish_alfred_push_data(struct globals *globals,
 	struct dataset *dataset;
 	bool new_entry_created;
 	unsigned int data_len;
+	unsigned char *buf;
 	unsigned int len;
 	uint8_t *pos;
+	bool changed;
 
 	/* test already done in process_alfred_push_data */
 	len = ntohs(push->header.length);
@@ -62,10 +64,6 @@ static int finish_alfred_push_data(struct globals *globals,
 			dataset->data_source = SOURCE_SYNCED;
 
 			memcpy(&dataset->data, data, sizeof(*data));
-			if (hash_add(globals->data_hash, dataset)) {
-				free(dataset);
-				goto err;
-			}
 			new_entry_created = true;
 		}
 		/* don't overwrite our own data */
@@ -75,13 +73,14 @@ static int finish_alfred_push_data(struct globals *globals,
 		clock_gettime(CLOCK_MONOTONIC, &dataset->last_seen);
 
 		/* check that data was changed */
-		if (new_entry_created ||
-		    dataset->data.header.length != data_len ||
-		    memcmp(dataset->buf, data->data, data_len) != 0) {
-			changed_data_type(globals, data->header.type);
-			unix_sock_event_notify(globals, data->header.type,
-					       data->source);
-		}
+		changed = new_entry_created ||
+			  dataset->data.header.length != data_len ||
+			  !dataset->buf ||
+			  memcmp(dataset->buf, data->data, data_len) != 0;
+
+		buf = malloc(data_len);
+		if (!buf)
+			goto err;
 
 		/* free old buffer */
 		if (dataset->buf) {
@@ -89,15 +88,25 @@ static int finish_alfred_push_data(struct globals *globals,
 			dataset->data.header.length = 0;
 		}
 
-		dataset->buf = malloc(data_len);
+		if (new_entry_created) {
+			if (hash_add(globals->data_hash, dataset)) {
+				free(buf);
+				free(dataset);
+				goto err;
+			}
+		}
 
-		/* that's not good */
-		if (!dataset->buf)
-			goto err;
-
+		dataset->buf = buf;
 		dataset->data.header.length = data_len;
 		dataset->data.header.version = data->header.version;
 		memcpy(dataset->buf, data->data, data_len);
+
+		/* only announce the new data once it is actually stored */
+		if (changed) {
+			changed_data_type(globals, data->header.type);
+			unix_sock_event_notify(globals, data->header.type,
+					       data->source);
+		}
 
 		/* if the sender is also the the source of the dataset, we
 		 * got a first hand dataset. */
