@@ -242,7 +242,7 @@ static int gpsd_read_answer(struct globals *globals)
 	while ((gpsd_data = gpsd_receive_answer_packet(globals->unix_sock,
 						       &len, source, &ret)) != NULL) {
 		if (len < sizeof(*gpsd_data))
-			break;
+			continue;
 
 		/* check size and skip bogus packets */
 		if (len != GPSD_DATA_SIZE(gpsd_data))
