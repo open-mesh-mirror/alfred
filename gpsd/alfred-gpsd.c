@@ -164,7 +164,7 @@ static ssize_t read_full(int fd, void *buf, size_t count)
 }
 
 static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
-						  uint8_t *source)
+						  uint8_t *source, int *error)
 {
 	struct alfred_push_data_v0 *push;
 	static uint8_t buf[65536];
@@ -173,15 +173,29 @@ static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 	int ret;
 	int l;
 
+	*error = -1;
+
 	ret = read_full(sock, buf, sizeof(*tlv));
-	if (ret < 0)
+	if (ret < 0) {
+		perror("read from unix socket failed");
 		return NULL;
+	}
+
+	/* end of the answer */
+	if (ret == 0) {
+		*error = 0;
+		return NULL;
+	}
 
 	if (ret < (int)sizeof(*tlv))
 		return NULL;
 
 	tlv = (struct alfred_tlv *)buf;
-	/* TODO: might return an ALFRED_STATUS_ERROR too, handle it */
+	if (tlv->type == ALFRED_STATUS_ERROR) {
+		fprintf(stderr, "Request of gpsd data failed\n");
+		return NULL;
+	}
+
 	if (tlv->type != ALFRED_PUSH_DATA)
 		return NULL;
 
@@ -209,6 +223,8 @@ static struct gpsd_v1 *gpsd_receive_answer_packet(int sock, uint16_t *len,
 	if (data->header.version != GPSD_PACKETVERSION)
 		return NULL;
 
+	*error = 0;
+
 	memcpy(source, data->source, ETH_ALEN);
 	return (struct gpsd_v1 *) data->data;
 }
@@ -219,12 +235,12 @@ static int gpsd_read_answer(struct globals *globals)
 	uint8_t source[ETH_ALEN];
 	bool first_line = true;
 	uint16_t len;
+	int ret = 0;
 
 	printf("[\n");
 
 	while ((gpsd_data = gpsd_receive_answer_packet(globals->unix_sock,
-						       &len,
-						       source)) != NULL) {
+						       &len, source, &ret)) != NULL) {
 		if (len < sizeof(*gpsd_data))
 			break;
 
@@ -246,7 +262,7 @@ static int gpsd_read_answer(struct globals *globals)
 	printf("\n]\n");
 
 
-	return 0;
+	return ret;
 }
 
 /* Standard parsing of a GPS data source spec. Taken from gpsdclient.c
@@ -300,14 +316,16 @@ static void alfred_gpsd_source_spec(const char *arg,
 
 static int gpsd_get_data(struct globals *globals)
 {
+	int ret;
+
 	globals->unix_sock = gpsd_request_data(globals);
 	if (globals->unix_sock < 0)
 		return -1;
 
-	gpsd_read_answer(globals);
+	ret = gpsd_read_answer(globals);
 	close(globals->unix_sock);
 
-	return 0;
+	return ret;
 }
 
 static void gpsd_connect_gpsd(struct globals *globals)
@@ -584,8 +602,10 @@ int main(int argc, char *argv[])
 		return gpsd_server(globals);
 		break;
 	case OPMODE_CLIENT:
-		return gpsd_get_data(globals);
-		break;
+		if (gpsd_get_data(globals) < 0)
+			return EXIT_FAILURE;
+
+		return EXIT_SUCCESS;
 	}
 
 	return EXIT_FAILURE;
