@@ -189,7 +189,7 @@ ssize_t send_alfred_packet(struct globals *globals, struct interface *interface,
 		return 0;
 
 	ret = sendto(interface->netsock, buf, length, 0, dest_addr, slen);
-	if (ret == -EPERM) {
+	if (ret == -1) {
 		perror("Error during sent");
 		close(interface->netsock);
 		close(interface->netsock_mcast);
