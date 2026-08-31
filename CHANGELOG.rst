@@ -1,5 +1,12 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2026.3 (2026-08-31)
+===================
+
+* bugs squashed:
+
+  - seed the random() generator for transaction IDs
+
 2026.2 (2026-06-30)
 ===================
 
