@@ -79,8 +79,12 @@ static int finish_alfred_push_data(struct globals *globals,
 			  memcmp(dataset->buf, data->data, data_len) != 0;
 
 		buf = malloc(data_len);
-		if (!buf)
+		if (!buf) {
+			if (new_entry_created)
+				free(dataset);
+
 			goto err;
+		}
 
 		/* free old buffer */
 		if (dataset->buf) {
