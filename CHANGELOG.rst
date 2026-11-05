@@ -1,5 +1,40 @@
 .. SPDX-License-Identifier: GPL-2.0
 
+2026.4 (2026-11-05)
+===================
+
+* coding style cleanups and refactoring
+* bugs squashed:
+
+  - announce changed data only after it was stored
+  - avoid endless-loop when reading data from stdin fails
+  - avoid leak of dataset on buffer allocation
+  - close the listening socket on daemon setup errors
+  - close the client socket on unix_sock_req_data errors
+  - don't check the "none" on network interface change
+  - don't drop the mesh interface name on OOM
+  - don't leak event listener when epoll registration fails
+  - don't stop translation table dump after first entry
+  - don't treat empty datagrams as a socket read error
+  - drop CAP_NET_RAW when binding to the device fails
+  - fix error code from unix_sock_req_data_reply
+  - fix off-by-one in client interface name length checks
+  - free the correct capability set when cap_init() fails
+  - gpsd: don't drop the rest of the answer for a bogus dataset
+  - gpsd: fix counter underflow on leading carriage return
+  - gpsd: handle empty or not 0-terminated TPV
+  - gpsd: handle short reads on the unix socket
+  - gpsd: report failures while reading the answer
+  - handle short reads when waiting for daemon answer
+  - keep the running interfaces when reconfiguration fails
+  - report failure when the client refuses to change interfaces
+  - update stored interface list on interface change
+  - vis: don't drop the rest of the answer for a bogus dataset
+  - vis: fix jsondoc output for nodes without vis entries
+  - vis: handle short reads on the unix socket
+  - vis: report failures while reading the answer
+  - vis: skip originators with unresolvable hard interface
+
 2026.3 (2026-08-31)
 ===================
 
